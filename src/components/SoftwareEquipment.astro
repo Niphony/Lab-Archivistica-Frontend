@@ -1,0 +1,120 @@
+--- 
+const softwareList = [
+  {
+    name: 'AutoCAD',
+    color: 'bg-red-700',
+    initial: 'A',
+    logo: `<svg viewBox="0 0 40 40" class="w-8 h-8" fill="none">
+      <text x="8" y="28" font-size="22" font-weight="900" fill="#e34234" font-family="sans-serif">A</text>
+    </svg>`,
+  },
+  {
+    name: 'Power BI',
+    color: 'bg-yellow-500',
+    logo: `<svg viewBox="0 0 40 40" class="w-8 h-8" fill="none">
+      <rect x="4" y="18" width="8" height="18" rx="1" fill="#f2c811"/>
+      <rect x="16" y="10" width="8" height="26" rx="1" fill="#f2c811"/>
+      <rect x="28" y="4" width="8" height="32" rx="1" fill="#f2c811" opacity=".7"/>
+    </svg>`,
+  },
+  {
+    name: 'AtoM',
+    color: 'bg-teal-600',
+    logo: `<svg viewBox="0 0 40 40" class="w-8 h-8" fill="none">
+      <circle cx="20" cy="20" r="14" stroke="#5eead4" stroke-width="2"/>
+      <text x="7" y="25" font-size="12" font-weight="700" fill="#5eead4" font-family="sans-serif">atöm</text>
+    </svg>`,
+  },
+  {
+    name: 'DSpace',
+    color: 'bg-emerald-700',
+    logo: `<svg viewBox="0 0 40 40" class="w-8 h-8" fill="none">
+      <rect x="4" y="8" width="14" height="14" rx="2" fill="#34d399" opacity="0.8"/>
+      <rect x="22" y="8" width="14" height="14" rx="2" fill="#34d399" opacity="0.5"/>
+      <rect x="4" y="26" width="14" height="10" rx="2" fill="#34d399" opacity="0.5"/>
+      <rect x="22" y="26" width="14" height="10" rx="2" fill="#34d399" opacity="0.8"/>
+    </svg>`,
+  },
+  {
+    name: 'Archivematica',
+    color: 'bg-orange-600',
+    logo: `<svg viewBox="0 0 40 40" class="w-8 h-8" fill="none">
+      <circle cx="20" cy="20" r="13" stroke="#fb923c" stroke-width="2"/>
+      <text x="11" y="25" font-size="15" font-weight="700" fill="#fb923c" font-family="sans-serif">a</text>
+    </svg>`,
+  },
+  {
+    name: 'SGDEA',
+    color: 'bg-teal-700',
+    logo: `<svg viewBox="0 0 40 40" class="w-8 h-8" fill="none">
+      <rect x="6" y="4" width="20" height="26" rx="2" stroke="#2dd4bf" stroke-width="1.5"/>
+      <rect x="10" y="8" width="12" height="2" rx="1" fill="#2dd4bf"/>
+      <rect x="10" y="13" width="12" height="2" rx="1" fill="#2dd4bf"/>
+      <rect x="10" y="18" width="8" height="2" rx="1" fill="#2dd4bf"/>
+      <path d="M18 28l8 4V24l-8 4z" fill="#2dd4bf" opacity="0.7"/>
+    </svg>`,
+  },
+];
+
+const equipment = [
+  { count: 0, label: 'Computadores de alto rendimiento', icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="w-8 h-8"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25m18 0A2.25 2.25 0 0018.75 3H5.25A2.25 2.25 0 003 5.25m18 0H3" /></svg>` },
+  { count: 0, label: 'Servidores institucionales', icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="w-8 h-8"><path stroke-linecap="round" stroke-linejoin="round" d="M5.25 14.25h13.5m-13.5 0a3 3 0 01-3-3m3 3a3 3 0 100 6h13.5a3 3 0 100-6m-16.5-3a3 3 0 013-3h13.5a3 3 0 013 3m-19.5 0a4.5 4.5 0 01.9-2.7L5.737 5.1a3.375 3.375 0 012.7-1.35h7.126c1.062 0 2.062.5 2.7 1.35l2.587 3.45a4.5 4.5 0 01.9 2.7m0 0a3 3 0 01-3 3m0 3h.008v.008h-.008v-.008zm0-6h.008v.008h-.008v-.008zm-3 6h.008v.008h-.008v-.008zm0-6h.008v.008h-.008v-.008z" /></svg>` },
+  { count: 0, label: 'Lectores biométricos', icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="w-8 h-8"><path stroke-linecap="round" stroke-linejoin="round" d="M7.864 4.243A7.5 7.5 0 0119.5 10.5c0 2.92-.556 5.709-1.568 8.268M5.742 6.364A7.465 7.465 0 004.5 10.5a7.464 7.464 0 01-1.15 3.993m1.989 3.559A11.209 11.209 0 008.25 10.5a3.75 3.75 0 117.5 0c0 .527-.021 1.049-.064 1.565M12 10.5a14.94 14.94 0 01-3.6 9.75m6.633-4.596a18.666 18.666 0 01-2.485 5.33" /></svg>` },
+  { count: 0, label: 'Escáneres y dispositivos', icon: `<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5" class="w-8 h-8"><path stroke-linecap="round" stroke-linejoin="round" d="M3.75 4.875c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 013.75 9.375v-4.5zm0 9.75c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5a1.125 1.125 0 01-1.125-1.125v-4.5zm9.75-9.75c0-.621.504-1.125 1.125-1.125h4.5c.621 0 1.125.504 1.125 1.125v4.5c0 .621-.504 1.125-1.125 1.125h-4.5A1.125 1.125 0 0113.5 9.375v-4.5z" /></svg>` },
+];
+---
+
+<section class="py-16 bg-gray-50">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
+
+      <!-- Software disponible -->
+      <div class="bg-white rounded-2xl border border-gray-200 p-7 shadow-sm">
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="font-display font-bold text-xl text-navy-900">Software disponible</h2>
+          <a href="/software" class="inline-flex items-center gap-1 text-accent-500 text-sm font-semibold hover:gap-2 transition-all">
+            Ver todos
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
+            </svg>
+          </a>
+        </div>
+
+        <div class="grid grid-cols-3 gap-3">
+          {softwareList.map((sw) => (
+            <div class="group bg-navy-900 hover:bg-navy-800 rounded-xl p-4 flex flex-col items-center gap-2 cursor-pointer transition-colors duration-200">
+              <div set:html={sw.logo} />
+              <span class="text-white/80 text-xs font-semibold text-center group-hover:text-white transition-colors">{sw.name}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+
+      <!-- Equipos del laboratorio -->
+      <div class="bg-white rounded-2xl border border-gray-200 p-7 shadow-sm">
+        <div class="flex items-center justify-between mb-6">
+          <h2 class="font-display font-bold text-xl text-navy-900">Equipos del laboratorio</h2>
+          <a href="/equipos" class="inline-flex items-center gap-1 text-accent-500 text-sm font-semibold hover:gap-2 transition-all">
+            Ver inventario
+            <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
+            </svg>
+          </a>
+        </div>
+
+        <div class="grid grid-cols-2 gap-4">
+          {equipment.map((item) => (
+            <div class="border border-gray-100 rounded-xl p-5 flex items-start gap-4 hover:border-accent-300 hover:bg-accent-500/5 transition-all duration-200 group">
+              <div class="text-accent-500 shrink-0 group-hover:scale-110 transition-transform" set:html={item.icon} />
+              <div>
+                <p class="font-display font-bold text-3xl text-navy-900 leading-none mb-1">{item.count}</p>
+                <p class="text-gray-500 text-xs leading-snug">{item.label}</p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+
+    </div>
+  </div>
+</section>

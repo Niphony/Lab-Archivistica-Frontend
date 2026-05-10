@@ -1,0 +1,105 @@
+---
+---
+
+<section class="relative bg-navy-900 overflow-hidden min-h-[520px] lg:min-h-[600px] flex items-center">
+  <!-- Background grid pattern -->
+  <div class="absolute inset-0 bg-grid-pattern opacity-40"></div>
+
+  <!-- Radial glow -->
+  <div class="absolute right-0 top-0 w-2/3 h-full bg-gradient-to-l from-accent-600/10 via-transparent to-transparent pointer-events-none"></div>
+  <div class="absolute right-20 top-1/2 -translate-y-1/2 w-96 h-96 bg-accent-500/5 rounded-full blur-3xl pointer-events-none"></div>
+
+  <!-- Blueprint illustration (right side) -->
+  <div class="absolute right-0 top-0 bottom-0 w-1/2 hidden lg:flex items-center justify-center overflow-hidden">
+    <div class="relative w-full h-full flex items-center justify-end pr-8">
+      <!-- Blueprint SVG illustration -->
+      <svg viewBox="0 0 520 480" class="w-[480px] h-[440px] opacity-25 text-accent-400" fill="none" stroke="currentColor" stroke-width="0.8">
+        <!-- Monitor/screen -->
+        <rect x="100" y="80" width="320" height="240" rx="8" stroke-width="1.5"/>
+        <rect x="110" y="90" width="300" height="220" rx="4"/>
+        <!-- Screen content lines -->
+        <line x1="130" y1="120" x2="280" y2="120"/>
+        <line x1="130" y1="135" x2="260" y2="135"/>
+        <line x1="130" y1="150" x2="300" y2="150"/>
+        <line x1="130" y1="165" x2="240" y2="165"/>
+        <!-- Grid inside screen -->
+        <rect x="130" y="180" width="80" height="60" rx="2"/>
+        <rect x="225" y="180" width="80" height="60" rx="2"/>
+        <line x1="130" y1="200" x2="210" y2="200"/>
+        <line x1="225" y1="200" x2="305" y2="200"/>
+        <line x1="130" y1="220" x2="210" y2="220"/>
+        <line x1="225" y1="220" x2="305" y2="220"/>
+        <!-- Stand -->
+        <line x1="220" y1="320" x2="220" y2="360"/>
+        <line x1="300" y1="320" x2="300" y2="360"/>
+        <line x1="180" y1="360" x2="340" y2="360"/>
+        <!-- Decorative circles -->
+        <circle cx="400" cy="120" r="40" stroke-dasharray="5 3"/>
+        <circle cx="400" cy="120" r="25"/>
+        <circle cx="400" cy="120" r="5" fill="currentColor" stroke="none"/>
+        <!-- Corner brackets -->
+        <path d="M60 60 L60 40 L80 40"/>
+        <path d="M460 60 L460 40 L440 40"/>
+        <path d="M60 380 L60 400 L80 400"/>
+        <path d="M460 380 L460 400 L440 400"/>
+        <!-- Dimension lines -->
+        <line x1="60" y1="430" x2="460" y2="430" stroke-dasharray="4 2"/>
+        <line x1="60" y1="420" x2="60" y2="440"/>
+        <line x1="460" y1="420" x2="460" y2="440"/>
+        <!-- Small data boxes -->
+        <rect x="350" y="270" width="100" height="55" rx="3"/>
+        <line x1="360" y1="285" x2="440" y2="285"/>
+        <line x1="360" y1="297" x2="430" y2="297"/>
+        <line x1="360" y1="309" x2="435" y2="309"/>
+        <!-- Cross markers -->
+        <line x1="90" y1="185" x2="100" y2="185"/>
+        <line x1="95" y1="180" x2="95" y2="190"/>
+        <line x1="420" y1="300" x2="430" y2="300"/>
+        <line x1="425" y1="295" x2="425" y2="305"/>
+      </svg>
+    </div>
+  </div>
+
+  <!-- Hero content -->
+  <div class="relative z-10 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 lg:py-28 w-full">
+    <div class="max-w-xl">
+      <!-- Eyebrow -->
+      <div class="flex items-center gap-2 mb-6">
+        <div class="w-8 h-px bg-accent-400"></div>
+        <span class="text-accent-400 text-xs font-semibold tracking-widest uppercase">Universidad Distrital</span>
+      </div>
+
+      <h1 class="font-display font-bold text-white leading-tight mb-6">
+        <span class="block text-4xl sm:text-5xl lg:text-[52px]">Laboratorio de</span>
+        <span class="block text-4xl sm:text-5xl lg:text-[52px] text-accent-400">Archivística y</span>
+        <span class="block text-4xl sm:text-5xl lg:text-[52px]">Tecnologías Digitales</span>
+      </h1>
+
+      <p class="text-white/70 text-base sm:text-lg leading-relaxed mb-10 max-w-md">
+        Espacio académico para la gestión, análisis y transformación de la información con tecnología, innovación y compromiso social.
+      </p>
+
+      <div class="flex flex-wrap gap-3">
+        <a
+          href="/servicios"
+          class="inline-flex items-center gap-2 bg-accent-500 hover:bg-accent-600 text-white font-semibold px-6 py-3 rounded transition-all duration-200 group"
+        >
+          Explorar servicios
+          <svg class="w-4 h-4 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
+          </svg>
+        </a>
+        <a
+          href="#contacto"
+          class="inline-flex items-center gap-2 border border-white/30 hover:border-white/60 text-white font-semibold px-6 py-3 rounded transition-all duration-200"
+        >
+          Reservar laboratorio
+          <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 3v2.25M17.25 3v2.25M3 18.75V7.5a2.25 2.25 0 012.25-2.25h13.5A2.25 2.25 0 0121 7.5v11.25m-18 0A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75m-18 0v-7.5A2.25 2.25 0 015.25 9h13.5A2.25 2.25 0 0121 9v7.5" />
+          </svg>
+        </a>
+      </div>
+    </div>
+  </div>
+
+</section>
