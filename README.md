@@ -8,10 +8,10 @@
 ### 1) Instalar dependencias
 
 ```bash
-npm install
+npm ci
 ```
 
-### 2) Ejecutar en desarrollo
+### 2) Ejecutar en desarrollo - Para tener preview en localhost
 
 ```bash
 npm run dev
@@ -20,7 +20,7 @@ npm run dev
 ### 3) Build de produccion
 
 ```bash
-npm run build
+npm run build 
 ```
 
 ### 4) Preview local
