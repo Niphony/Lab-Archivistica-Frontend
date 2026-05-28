@@ -57,7 +57,7 @@ const navLinks = [
         ))}
       </nav>
 <a
-  href="https://moodle.udistrital.edu.co/"
+  href="https://aulasvirtuales.udistrital.edu.co/"
   target="_blank"
   class="hidden lg:inline-flex items-center px-4 py-2 bg-accent-500 hover:bg-accent-600 text-white text-sm font-semibold rounded transition-colors duration-150"
 >
@@ -79,6 +79,13 @@ const navLinks = [
   <!-- Mobile menu -->
   <div id="mobile-menu" class="hidden lg:hidden bg-navy-800 border-t border-white/10">
     <nav class="max-w-7xl mx-auto px-4 py-3 flex flex-col gap-1">
+       <a 
+      href="https://aulasvirtuales.udistrital.edu.co/" 
+      target="_blank" 
+      class="px-3 py-2 text-sm font-semibold rounded transition-colors bg-accent-500 hover:bg-accent-600 text-white text-center"
+    >
+      Moodle
+    </a>
       {navLinks.map((link) => (
         <a
           href={link.href}
