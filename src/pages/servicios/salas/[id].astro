@@ -3,10 +3,24 @@ import Layout from '../../../layouts/Layout.astro';
 import LoanRoomForm from '../../../components/LoanRoomForm';
 import { salasApi } from '../../../lib/api';
 
+// Generar rutas de forma estática en tiempo de compilación
+export async function getStaticPaths() {
+  try {
+    const todasLasSalas = await salasApi.getAll(); // Asegúrate de usar el método correcto de tu API para listar todo
+    return todasLasSalas.map((s) => ({
+      params: { id: String(s.id) } // El parámetro ID debe ser obligatoriamente un String
+    }));
+  } catch (err) {
+    console.error("Error cargando rutas estáticas de salas:", err);
+    return [];
+  }
+}
+
 const { id } = Astro.params;
 let sala = null;
 try { sala = await salasApi.getById(Number(id)); } catch {}
 ---
+
 <Layout title={sala?.name ?? 'Sala'}>
   <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
     <a href="/servicios/salas" class="inline-flex items-center gap-2 text-white/50 hover:text-white text-sm mb-8 transition-colors">
