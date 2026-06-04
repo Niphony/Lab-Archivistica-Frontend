@@ -3,14 +3,29 @@ import Layout from '../../layouts/Layout.astro';
 import LoanEquipmentForm from '../../components/LoanEquipmentForm';
 import { equiposApi } from '../../lib/api';
 
+// 1. Agrega esta función para que Astro sepa qué IDs existen en la API
+export async function getStaticPaths() {
+  try {
+    const todosLosEquipos = await equiposApi.getAll(); // Cambia 'getAll()' por el método real que liste tus equipos
+    return todosLosEquipos.map((e) => ({
+      params: { id: String(e.id) } // El ID debe ser obligatoriamente un String aquí
+    }));
+  } catch (err) {
+    console.error("Error cargando rutas estáticas:", err);
+    return []; // Retorna un array vacío si falla la API para no romper toda la compilación
+  }
+}
+
 const { id } = Astro.params;
 let equipo = null;
 let error = null;
+
 try {
   equipo = await equiposApi.getById(Number(id));
 } catch {
   error = 'Equipo no encontrado.';
 }
+
 ---
 <Layout title={equipo?.name ?? 'Equipo'}>
   <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
