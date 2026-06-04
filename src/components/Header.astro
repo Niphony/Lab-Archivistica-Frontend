@@ -1,11 +1,11 @@
 ---
 const navLinks = [
-  { label: 'Inicio', href: '/', active: true },
-  { label: 'Servicios', href: '#' },
-  { label: 'Software', href: '#' },
-  { label: 'Equipos', href: '#' },
-  { label: 'Investigación', href: '#' },
-  { label: 'Contacto', href: '#contacto' },
+  { label: 'Inicio',       href: '/',              active: Astro.url.pathname === '/' },
+  { label: 'Servicios',    href: '/servicios',     active: Astro.url.pathname.startsWith('/servicios') },
+  { label: 'Software',     href: '/software',      active: Astro.url.pathname.startsWith('/software') },
+  { label: 'Equipos',      href: '/equipos',       active: Astro.url.pathname.startsWith('/equipos') },
+  { label: 'Investigación',href: '/investigacion', active: Astro.url.pathname.startsWith('/investigacion') },
+  { label: 'Contacto',     href: '/contacto',      active: Astro.url.pathname.startsWith('/contacto') },
 ];
 ---
 

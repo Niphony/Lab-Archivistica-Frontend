@@ -1,0 +1,33 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import LoanRoomForm from '../../../components/LoanRoomForm';
+import { salasApi } from '../../../lib/api';
+
+const { id } = Astro.params;
+let sala = null;
+try { sala = await salasApi.getById(Number(id)); } catch {}
+---
+<Layout title={sala?.name ?? 'Sala'}>
+  <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <a href="/servicios/salas" class="inline-flex items-center gap-2 text-white/50 hover:text-white text-sm mb-8 transition-colors">
+      <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
+      Volver a salas
+    </a>
+    {sala && (
+      <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
+        <div>
+          <h1 class="text-3xl font-display font-bold text-white mb-2">{sala.name}</h1>
+          <p class="text-white/40 text-sm mb-1">Capacidad: {sala.capacity} personas</p>
+          <p class="text-white/60 leading-relaxed mt-4">{sala.description}</p>
+        </div>
+        <div class="bg-navy-800 border border-white/10 rounded-2xl p-6">
+          <h2 class="text-xl font-display font-bold text-white mb-6">Reservar sala</h2>
+          {sala.available
+            ? <LoanRoomForm client:load roomId={sala.id} roomName={sala.name} />
+            : <p class="text-white/50 text-sm text-center py-8">Esta sala no está disponible actualmente.</p>
+          }
+        </div>
+      </div>
+    )}
+  </div>
+</Layout>

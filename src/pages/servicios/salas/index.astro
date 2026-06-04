@@ -1,0 +1,49 @@
+---
+import Layout from '../../../layouts/Layout.astro';
+import { salasApi } from '../../../lib/api';
+
+let salas = [];
+try { salas = await salasApi.getAll(); } catch {}
+---
+<Layout title="Salas">
+  <section class="bg-navy-900 border-b border-white/10 py-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex items-center gap-3 mb-2">
+        <a href="/servicios" class="text-white/40 hover:text-white/70 text-sm">Servicios</a>
+        <span class="text-white/20">/</span>
+        <span class="text-accent-400 text-sm">Salas</span>
+      </div>
+      <h1 class="text-4xl font-display font-bold text-white mb-3">Reserva de Salas</h1>
+      <p class="text-white/60 max-w-xl">Espacios equipados para trabajo individual o grupal, digitalizacion e investigación.</p>
+    </div>
+  </section>
+
+  <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
+    <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6">
+      {salas.map((sala) => (
+        <div class="bg-navy-800 border border-white/10 rounded-2xl overflow-hidden hover:border-accent-400/30 transition-all">
+          <div class="bg-navy-700/50 h-36 flex items-center justify-center">
+            <svg class="w-14 h-14 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75"/>
+            </svg>
+          </div>
+          <div class="p-5">
+            <div class="flex items-start justify-between mb-2">
+              <h3 class="font-display font-bold text-white">{sala.name}</h3>
+              <span class={`text-xs px-2 py-0.5 rounded-full font-semibold ml-2 ${sala.available ? 'bg-green-500/15 text-green-400' : 'bg-red-500/15 text-red-400'}`}>
+                {sala.available ? 'Disponible' : 'Ocupada'}
+              </span>
+            </div>
+            <p class="text-white/40 text-xs mb-1">Capacidad: {sala.capacity} personas</p>
+            <p class="text-white/50 text-sm mb-4 line-clamp-2">{sala.description}</p>
+            {sala.available && (
+              <a href={`/servicios/salas/${sala.id}`} class="w-full bg-accent-500 hover:bg-accent-600 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors flex items-center justify-center">
+                Reservar sala
+              </a>
+            )}
+          </div>
+        </div>
+      ))}
+    </div>
+  </section>
+</Layout>

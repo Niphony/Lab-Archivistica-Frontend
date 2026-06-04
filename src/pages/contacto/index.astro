@@ -1,0 +1,45 @@
+---
+import Layout from '../../layouts/Layout.astro';
+import ContactForm from '../../components/ContactForm';
+---
+<Layout title="Contacto">
+  <section class="bg-navy-900 border-b border-white/10 py-12">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+      <h1 class="text-4xl font-display font-bold text-white mb-3">Contáctanos</h1>
+      <p class="text-white/60 max-w-xl mx-auto">¿Tienes preguntas sobre nuestros servicios? Escríbenos y te responderemos a la brevedad.</p>
+    </div>
+  </section>
+
+  <section class="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
+    <div class="grid grid-cols-1 lg:grid-cols-5 gap-12">
+      <!-- Info de contacto -->
+      <div class="lg:col-span-2 space-y-6">
+        <h2 class="text-xl font-display font-bold text-white">Información de contacto</h2>
+        {[
+          { icon: 'M15 10.5a3 3 0 11-6 0 3 3 0 016 0z M19.5 10.5c0 7.142-7.5 11.25-7.5 11.25S4.5 17.642 4.5 10.5a7.5 7.5 0 1115 0z', label: 'Ubicación', value: 'Facultad de Ciencias y Educación, Universidad Distrital', sub: 'Bogotá, Colombia' },
+          { icon: 'M21.75 6.75v10.5a2.25 2.25 0 01-2.25 2.25h-15a2.25 2.25 0 01-2.25-2.25V6.75m19.5 0A2.25 2.25 0 0019.5 4.5h-15a2.25 2.25 0 00-2.25 2.25m19.5 0v.243a2.25 2.25 0 01-1.07 1.916l-7.5 4.615a2.25 2.25 0 01-2.36 0L3.32 8.91a2.25 2.25 0 01-1.07-1.916V6.75', label: 'Correo', value: 'labarchivistica@udistrital.edu.co' },
+          { icon: 'M12 6v6h4.5m4.5 0a9 9 0 11-18 0 9 9 0 0118 0z', label: 'Horario', value: 'Lunes a Viernes', sub: '8:00 AM – 5:00 PM' },
+        ].map(({ icon, label, value, sub }) => (
+          <div class="flex items-start gap-4">
+            <div class="w-10 h-10 bg-accent-500/10 border border-accent-500/20 rounded-lg flex items-center justify-center shrink-0 mt-0.5">
+              <svg class="w-5 h-5 text-accent-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d={icon}/>
+              </svg>
+            </div>
+            <div>
+              <p class="text-white/40 text-xs uppercase tracking-widest mb-0.5">{label}</p>
+              <p class="text-white text-sm font-medium">{value}</p>
+              {sub && <p class="text-white/50 text-sm">{sub}</p>}
+            </div>
+          </div>
+        ))}
+      </div>
+
+      <!-- Formulario -->
+      <div class="lg:col-span-3 bg-navy-800 border border-white/10 rounded-2xl p-8">
+        <h2 class="text-xl font-display font-bold text-white mb-6">Envíanos un mensaje</h2>
+        <ContactForm client:load />
+      </div>
+    </div>
+  </section>
+</Layout>
