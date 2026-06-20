@@ -1,4 +1,7 @@
 ---
+import { Image } from 'astro:assets';
+import logoud from '../assets/LOGOTIPO---UD-FCE-BLANCO.png';
+
 const navLinks = [
   { label: 'Inicio',       href: '/',              active: Astro.url.pathname === '/' },
   { label: 'Servicios',    href: '/servicios',     active: Astro.url.pathname.startsWith('/servicios') },
@@ -16,8 +19,8 @@ const navLinks = [
       <!-- Logo left -->
       <a href="/" class="flex items-center gap-3 shrink-0">
       <div class="flex items-center">
-  <img
-    src="/LOGOTIPO---UD-FCE-BLANCO.png"
+  <Image
+    src={logoud}
     alt="Universidad Distrital Francisco José de Caldas"
     class="h-20 w-auto object-contain"
   />
