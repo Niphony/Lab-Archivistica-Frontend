@@ -87,9 +87,9 @@ import Layout from '../../layouts/Layout.astro';
       <div class="grid grid-cols-1 sm:grid-cols-4 gap-6">
         {[
           { step: '01', title: 'Selecciona el recurso', desc: 'Navega el catálogo de equipos o salas y elige el que necesitas.' },
-          { step: '02', title: 'Completa el formulario', desc: 'Ingresa tu código estudiantil, fechas y propósito del préstamo.' },
-          { step: '03', title: 'Confirmación', desc: 'Recibirás un número de solicitud y el estado de tu reserva.' },
-          { step: '04', title: 'Recoge en el lab', desc: 'Presenta tu carné en el laboratorio en la fecha acordada.' },
+          { step: '02', title: 'Completa el formulario', desc: 'Completa el formulario con los datos solicitados.' },
+          { step: '03', title: 'Confirmación', desc: 'Recibirás una confirmación mediante correo electronico.' },
+          { step: '04', title: 'Entrega', desc: 'Se da la entrega de los recursos asignados y firma control para el prestamo de la sala.' },
         ].map(({ step, title, desc }) => (
           <div class="text-center">
             <div class="w-12 h-12 bg-accent-500 rounded-full flex items-center justify-center mx-auto mb-4 text-white font-bold font-display text-sm">{step}</div>
