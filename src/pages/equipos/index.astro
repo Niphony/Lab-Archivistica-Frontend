@@ -1,14 +1,14 @@
 ---
 import Layout from '../../layouts/Layout.astro';
-import { equiposApi } from '../../lib/api';
 
-let equipos = [];
-let error = null;
-try {
-  equipos = await equiposApi.getAll();
-} catch (e) {
-  error = 'No se pudo cargar la lista de equipos.';
-}
+const equipos = [
+  { id: 1, name: 'Computador de Escritorio', description: 'Equipo de cómputo de alta gama para procesamiento de datos y digitalización documental.', available: true, category: 'Cómputo' },
+  { id: 2, name: 'Escáner Planetario', description: 'Escáner de alta resolución para digitalización de documentos históricos en gran formato.', available: true, category: 'Digitalización' },
+  { id: 3, name: 'Laptop Portátil', description: 'Portátil con software especializado para trabajo de campo en archivística.', available: false, category: 'Cómputo' },
+  { id: 4, name: 'Cámara Digital', description: 'Cámara réflex digital para captura de imágenes de archivo.', available: true, category: 'Digitalización' },
+  { id: 5, name: 'Tableta Digitalizadora', description: 'Tableta para digitalización de planos y documentos de gran tamaño.', available: true, category: 'Digitalización' },
+  { id: 6, name: 'Servidor Portátil', description: 'Servidor portátil para almacenamiento y procesamiento in situ.', available: false, category: 'Cómputo' },
+];
 ---
 <Layout title="Equipos">
   <section class="bg-navy-900 border-b border-white/10 py-12">
@@ -24,13 +24,6 @@ try {
   </section>
 
   <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-    {error && (
-      <div class="bg-red-500/10 border border-red-400/30 rounded-xl p-6 text-center mb-8">
-        <p class="text-red-300">{error}</p>
-      </div>
-    )}
-
-    <!-- Filtros -->
     <div class="flex flex-wrap gap-3 mb-8" id="filters">
       <button class="filter-btn active px-4 py-1.5 text-sm rounded-full border border-accent-400 text-accent-400 font-semibold" data-filter="all">Todos</button>
       <button class="filter-btn px-4 py-1.5 text-sm rounded-full border border-white/20 text-white/60 hover:border-white/40 hover:text-white font-semibold" data-filter="disponible">Disponibles</button>
@@ -40,14 +33,9 @@ try {
       {equipos.map((eq) => (
         <div class="bg-navy-800 border border-white/10 rounded-2xl overflow-hidden hover:border-accent-400/30 transition-all duration-300 equipment-card" data-available={eq.available}>
           <div class="bg-navy-700/50 h-40 flex items-center justify-center">
-            {eq.imageUrl
-              ? <img src={eq.imageUrl} alt={eq.name} class="h-full w-full object-cover" />
-              : (
-                <svg class="w-16 h-16 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25A2.25 2.25 0 015.25 3h13.5A2.25 2.25 0 0121 5.25z"/>
-                </svg>
-              )
-            }
+            <svg class="w-16 h-16 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25A2.25 2.25 0 015.25 3h13.5A2.25 2.25 0 0121 5.25z"/>
+            </svg>
           </div>
           <div class="p-5">
             <div class="flex items-start justify-between mb-2">

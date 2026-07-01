@@ -1,11 +1,18 @@
 ---
 import Layout from '../../layouts/Layout.astro';
-import { softwareApi } from '../../lib/api';
 
-let softwares = [];
-try { softwares = await softwareApi.getAll(); } catch {}
+const softwares = [
+  { id: 1, name: 'DSpace', version: '8.x', category: 'Repositorio Digital', licenseType: 'Open Source', description: 'Plataforma de código abierto para la creación de repositorios digitales institucionales. Permite la gestión, preservación y difusión de la producción académica y científica.', internalUrl: '/apps/dspace' },
+  { id: 2, name: 'Archivematica', version: '1.x', category: 'Preservación Digital', licenseType: 'Open Source', description: 'Sistema de preservación digital automatizado que implementa flujos de trabajo basados en estándares internacionales (OAIS, PREMIS, METS).', internalUrl: '/apps/archivematica' },
+  { id: 3, name: 'AtoM', version: '2.x', category: 'Descripción Archivística', licenseType: 'Open Source', description: 'Aplicación web para descripción archivística basada en estándares ISAD(G), ISAAR(CPF) e ISDIAH.', internalUrl: '/apps/atom' },
+  { id: 4, name: 'Orfeo', version: '5.x', category: 'Gestión Documental', licenseType: 'Propietario', description: 'Sistema de gestión documental y administración de archivos.' },
+  { id: 5, name: 'Apache Tika', version: '3.x', category: 'Extracción de Metadatos', licenseType: 'Apache 2.0', description: 'Kit de herramientas para detección y extracción de metadatos y contenido de documentos en múltiples formatos.' },
+  { id: 6, name: 'ExifTool', version: '13.x', category: 'Metadatos', licenseType: 'Perl', description: 'Herramienta para leer, escribir y editar metadatos de archivos multimedia y documentos.' },
+];
 
 const categories = [...new Set(softwares.map(s => s.category))];
+
+const highlights = softwares.filter(s => s.internalUrl);
 ---
 <Layout title="Software">
   <section class="bg-navy-900 border-b border-white/10 py-12">
@@ -15,8 +22,44 @@ const categories = [...new Set(softwares.map(s => s.category))];
     </div>
   </section>
 
+  <!-- Acceso directo a herramientas principales -->
+  {highlights.length > 0 && (
+    <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pt-12">
+      <div class="bg-gradient-to-br from-accent-600/10 to-navy-800 border border-accent-400/20 rounded-2xl p-8">
+        <div class="flex items-center gap-2 mb-6">
+          <svg class="w-5 h-5 text-accent-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M3.75 13.5l10.5-11.25L12 10.5h8.25L9.75 21.75 12 13.5H3.75z" />
+          </svg>
+          <h2 class="text-lg font-display font-bold text-white">Acceso rápido</h2>
+        </div>
+        <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {highlights.map((sw) => (
+            <a
+              href={sw.internalUrl}
+              class="group flex items-center gap-5 bg-navy-900/80 hover:bg-navy-900 border border-white/10 hover:border-accent-400/50 rounded-xl p-5 transition-all duration-300"
+            >
+              <div class="w-14 h-14 bg-accent-500/10 border border-accent-500/20 rounded-xl flex items-center justify-center shrink-0 group-hover:bg-accent-500/20 group-hover:scale-110 transition-all">
+                <svg class="w-7 h-7 text-accent-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M6.75 7.5l3 2.25-3 2.25m4.5 0h3m-9 8.25h13.5A2.25 2.25 0 0021 18V6a2.25 2.25 0 00-2.25-2.25H5.25A2.25 2.25 0 003 6v12a2.25 2.25 0 002.25 2.25z" />
+                </svg>
+              </div>
+              <div class="flex-1 min-w-0">
+                <h3 class="font-display font-bold text-white group-hover:text-accent-300 transition-colors">{sw.name}</h3>
+                <p class="text-white/50 text-xs mt-0.5">{sw.category} · v{sw.version}</p>
+              </div>
+              <div class="shrink-0 text-accent-400 group-hover:translate-x-1 transition-transform">
+                <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
+                  <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3" />
+                </svg>
+              </div>
+            </a>
+          ))}
+        </div>
+      </div>
+    </section>
+  )}
+
   <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-    <!-- Búsqueda -->
     <div class="flex flex-col sm:flex-row gap-4 mb-8">
       <input
         type="text" id="search-input" placeholder="Buscar software..."
@@ -43,6 +86,14 @@ const categories = [...new Set(softwares.map(s => s.category))];
           <h3 class="font-display font-bold text-white mb-1">{sw.name}</h3>
           <p class="text-accent-400/70 text-xs mb-2">v{sw.version} · {sw.category}</p>
           <p class="text-white/50 text-sm line-clamp-3">{sw.description}</p>
+          {sw.internalUrl && (
+            <a href={sw.internalUrl} class="mt-4 inline-flex items-center gap-1.5 text-accent-400 text-sm font-semibold hover:text-accent-300 transition-colors group/link">
+              Acceder
+              <svg class="w-3.5 h-3.5 group-hover/link:translate-x-1 transition-transform" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+                <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
+              </svg>
+            </a>
+          )}
         </div>
       ))}
     </div>
@@ -50,9 +101,9 @@ const categories = [...new Set(softwares.map(s => s.category))];
 </Layout>
 
 <script>
-  const search = document.getElementById('search-input') as HTMLInputElement;
-  const catFilter = document.getElementById('cat-filter') as HTMLSelectElement;
-  const cards = document.querySelectorAll<HTMLElement>('.software-card');
+  const search = document.getElementById('search-input');
+  const catFilter = document.getElementById('cat-filter');
+  const cards = document.querySelectorAll('.software-card');
 
   function filterCards() {
     const q = search.value.toLowerCase();

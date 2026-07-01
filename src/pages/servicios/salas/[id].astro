@@ -1,32 +1,30 @@
 ---
 import Layout from '../../../layouts/Layout.astro';
-import LoanRoomForm from '../../../components/LoanRoomForm';
-import { salasApi } from '../../../lib/api';
 
-// Generar rutas de forma estática en tiempo de compilación
+const salas = [
+  { id: 1, name: 'Sala de Digitalización', capacity: 6, available: true, description: 'Espacio equipado con escáneres planetarios y de alta velocidad para digitalización de documentos.' },
+  { id: 2, name: 'Sala de Trabajo Colaborativo', capacity: 12, available: true, description: 'Sala con equipos de cómputo y pizarra digital para trabajo en grupo.' },
+  { id: 3, name: 'Cubículo de Estudio', capacity: 2, available: false, description: 'Espacio privado para investigación y análisis de documentos.' },
+];
+
 export async function getStaticPaths() {
-  try {
-    const todasLasSalas = await salasApi.getAll(); // Asegúrate de usar el método correcto de tu API para listar todo
-    return todasLasSalas.map((s) => ({
-      params: { id: String(s.id) } // El parámetro ID debe ser obligatoriamente un String
-    }));
-  } catch (err) {
-    console.error("Error cargando rutas estáticas de salas:", err);
-    return [];
-  }
+  return [
+    { params: { id: '1' } },
+    { params: { id: '2' } },
+    { params: { id: '3' } },
+  ];
 }
 
 const { id } = Astro.params;
-let sala = null;
-try { sala = await salasApi.getById(Number(id)); } catch {}
+const sala = salas.find((s) => s.id === Number(id)) ?? null;
 ---
-
 <Layout title={sala?.name ?? 'Sala'}>
   <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
     <a href="/servicios/salas" class="inline-flex items-center gap-2 text-white/50 hover:text-white text-sm mb-8 transition-colors">
       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
       Volver a salas
     </a>
+    {!sala && <p class="text-red-400 bg-red-500/10 border border-red-400/20 rounded-xl p-6">Sala no encontrada.</p>}
     {sala && (
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
         <div>
@@ -37,7 +35,14 @@ try { sala = await salasApi.getById(Number(id)); } catch {}
         <div class="bg-navy-800 border border-white/10 rounded-2xl p-6">
           <h2 class="text-xl font-display font-bold text-white mb-6">Reservar sala</h2>
           {sala.available
-            ? <LoanRoomForm client:load roomId={sala.id} roomName={sala.name} />
+            ? (
+              <div class="text-center py-8">
+                <p class="text-white/60 mb-4">Para reservar esta sala, contáctanos o usa el formulario de reserva:</p>
+                <a href="https://forms.cloud.microsoft/pages/responsepage.aspx?id=74gT1bBqY0OflNVmRKRZcCYdtW4rSUhOkGItZSP0FSVUMkxQQTdaVUxZMlg4RTIyMFhJMTNJUU5RRC4u&route=shorturl" target="_blank" class="inline-flex items-center gap-2 bg-accent-500 hover:bg-accent-600 text-white font-semibold px-6 py-3 rounded-lg transition-colors">
+                  Ir al formulario
+                </a>
+              </div>
+            )
             : <p class="text-white/50 text-sm text-center py-8">Esta sala no está disponible actualmente.</p>
           }
         </div>

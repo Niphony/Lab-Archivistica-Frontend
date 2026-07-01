@@ -1,13 +1,6 @@
 ---
 import Layout from '../../../layouts/Layout.astro';
-import { salasApi } from '../../../lib/api';
-
-let salas = [];
-try { salas = await salasApi.getAll(); } catch {}
 ---
-
-<!-- Bueno dejo este comentario aca ya que de momento necesito solo un boton en la parte de salas, ah si se pregunta por que revise en documento ese de pagina que le envie por wasa (por eso comento todo lo demas que dejemos en un "tal vez es necesario") -->
-
 <Layout title="Salas">
   <section class="bg-navy-900 border-b border-white/10 py-12">
     <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -17,38 +10,9 @@ try { salas = await salasApi.getAll(); } catch {}
         <span class="text-accent-400 text-sm">Salas</span>
       </div>
       <h1 class="text-4xl font-display font-bold text-white mb-3">Reserva de Salas</h1>
-      <p class="text-white/60 max-w-xl">Espacios equipados para trabajo individual o grupal, digitalizacion e investigación.</p>
+      <p class="text-white/60 max-w-xl">Espacios equipados para trabajo individual o grupal, digitalización e investigación.</p>
     </div>
   </section>
-
-  <!-- <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-12"> -->
-  <!--   <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6"> -->
-  <!--     {salas.map((sala) => ( -->
-  <!--       <div class="bg-navy-800 border border-white/10 rounded-2xl overflow-hidden hover:border-accent-400/30 transition-all"> -->
-  <!--         <div class="bg-navy-700/50 h-36 flex items-center justify-center"> -->
-  <!--           <svg class="w-14 h-14 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24"> -->
-  <!--             <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75"/> -->
-  <!--           </svg> -->
-  <!--         </div> -->
-  <!--         <div class="p-5"> -->
-  <!--           <div class="flex items-start justify-between mb-2"> -->
-  <!--             <h3 class="font-display font-bold text-white">{sala.name}</h3> -->
-  <!--             <span class={`text-xs px-2 py-0.5 rounded-full font-semibold ml-2 ${sala.available ? 'bg-green-500/15 text-green-400' : 'bg-red-500/15 text-red-400'}`}> -->
-  <!--               {sala.available ? 'Disponible' : 'Ocupada'} -->
-  <!--             </span> -->
-  <!--           </div> -->
-  <!--           <p class="text-white/40 text-xs mb-1">Capacidad: {sala.capacity} personas</p> -->
-  <!--           <p class="text-white/50 text-sm mb-4 line-clamp-2">{sala.description}</p> -->
-  <!--           {sala.available && ( -->
-  <!--             <a href={`/servicios/salas/${sala.id}`} class="w-full bg-accent-500 hover:bg-accent-600 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors flex items-center justify-center"> -->
-  <!--               Reservar sala -->
-  <!--             </a> -->
-  <!--           )} -->
-  <!--         </div> -->
-  <!--       </div> -->
-  <!--     ))} -->
-  <!--   </div> -->
-  <!-- </section> -->
 
   <section class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-16">
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -71,18 +35,15 @@ try { salas = await salasApi.getAll(); } catch {}
         </span>
        </a>
 
-
-        <!-- Boton para otros calendarios de reseva (cuando los pasen) -->
-
          <a href="/servicios/salas" class="group bg-navy-800 border border-white/10 rounded-2xl p-8 hover:border-accent-400/50 hover:bg-navy-700 transition-all duration-300">
         <div class="w-14 h-14 bg-accent-500/10 border border-accent-500/20 rounded-xl flex items-center justify-center mb-6 group-hover:bg-accent-500/20 transition-colors">
           <svg class="w-7 h-7 text-accent-400" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
             <path stroke-linecap="round" stroke-linejoin="round" d="M2.25 21h19.5m-18-18v18m10.5-18v18m6-13.5V21M6.75 6.75h.75m-.75 3h.75m-.75 3h.75m3-6h.75m-.75 3h.75m-.75 3h.75M6.75 21v-3.375c0-.621.504-1.125 1.125-1.125h2.25c.621 0 1.125.504 1.125 1.125V21"/>
           </svg>
         </div>
-        <h2 class="text-xl font-display font-bold text-white mb-3 group-hover:text-accent-300 transition-colors">Otros Calendarios de Reseva</h2>
+        <h2 class="text-xl font-display font-bold text-white mb-3 group-hover:text-accent-300 transition-colors">Otros Calendarios de Reserva</h2>
         <p class="text-white/60 text-sm leading-relaxed mb-4">
-          Otras opciones de reseva ofrecidas por los laboratorios de archivistica y humanidades digitales.
+          Otras opciones de reserva ofrecidas por los laboratorios de archivística y humanidades digitales.
         </p>
         <span class="text-accent-400 text-sm font-semibold flex items-center gap-1">
           Ver salas disponibles
@@ -92,14 +53,6 @@ try { salas = await salasApi.getAll(); } catch {}
         </span>
       </a>
 
-
-
       </div>
   </section>
-
- 
-
-
-
-
 </Layout>

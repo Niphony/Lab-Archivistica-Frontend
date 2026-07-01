@@ -1,31 +1,28 @@
 ---
 import Layout from '../../layouts/Layout.astro';
-import LoanEquipmentForm from '../../components/LoanEquipmentForm';
-import { equiposApi } from '../../lib/api';
 
-// 1. Agrega esta función para que Astro sepa qué IDs existen en la API
+const equipos = [
+  { id: 1, name: 'Computador de Escritorio', description: 'Equipo de cómputo de alta gama para procesamiento de datos y digitalización documental.', available: true, category: 'Cómputo' },
+  { id: 2, name: 'Escáner Planetario', description: 'Escáner de alta resolución para digitalización de documentos históricos en gran formato.', available: true, category: 'Digitalización' },
+  { id: 3, name: 'Laptop Portátil', description: 'Portátil con software especializado para trabajo de campo en archivística.', available: false, category: 'Cómputo' },
+  { id: 4, name: 'Cámara Digital', description: 'Cámara réflex digital para captura de imágenes de archivo.', available: true, category: 'Digitalización' },
+  { id: 5, name: 'Tableta Digitalizadora', description: 'Tableta para digitalización de planos y documentos de gran tamaño.', available: true, category: 'Digitalización' },
+  { id: 6, name: 'Servidor Portátil', description: 'Servidor portátil para almacenamiento y procesamiento in situ.', available: false, category: 'Cómputo' },
+];
+
 export async function getStaticPaths() {
-  try {
-    const todosLosEquipos = await equiposApi.getAll(); // Cambia 'getAll()' por el método real que liste tus equipos
-    return todosLosEquipos.map((e) => ({
-      params: { id: String(e.id) } // El ID debe ser obligatoriamente un String aquí
-    }));
-  } catch (err) {
-    console.error("Error cargando rutas estáticas:", err);
-    return []; // Retorna un array vacío si falla la API para no romper toda la compilación
-  }
+  return [
+    { params: { id: '1' } },
+    { params: { id: '2' } },
+    { params: { id: '3' } },
+    { params: { id: '4' } },
+    { params: { id: '5' } },
+    { params: { id: '6' } },
+  ];
 }
 
 const { id } = Astro.params;
-let equipo = null;
-let error = null;
-
-try {
-  equipo = await equiposApi.getById(Number(id));
-} catch {
-  error = 'Equipo no encontrado.';
-}
-
+const equipo = equipos.find((e) => e.id === Number(id)) ?? null;
 ---
 <Layout title={equipo?.name ?? 'Equipo'}>
   <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
@@ -34,16 +31,15 @@ try {
       Volver a equipos
     </a>
 
-    {error && <p class="text-red-400 bg-red-500/10 border border-red-400/20 rounded-xl p-6">{error}</p>}
+    {!equipo && <p class="text-red-400 bg-red-500/10 border border-red-400/20 rounded-xl p-6">Equipo no encontrado.</p>}
 
     {equipo && (
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
         <div>
           <div class="bg-navy-800 rounded-2xl h-64 flex items-center justify-center border border-white/10 mb-6">
-            {equipo.imageUrl
-              ? <img src={equipo.imageUrl} alt={equipo.name} class="h-full w-full object-cover rounded-2xl"/>
-              : <svg class="w-24 h-24 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25A2.25 2.25 0 015.25 3h13.5A2.25 2.25 0 0121 5.25z"/></svg>
-            }
+            <svg class="w-24 h-24 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25A2.25 2.25 0 015.25 3h13.5A2.25 2.25 0 0121 5.25z"/>
+            </svg>
           </div>
           <h1 class="text-3xl font-display font-bold text-white mb-2">{equipo.name}</h1>
           <span class={`text-sm px-3 py-1 rounded-full font-semibold inline-block mb-4 ${equipo.available ? 'bg-green-500/15 text-green-400' : 'bg-red-500/15 text-red-400'}`}>
@@ -58,7 +54,14 @@ try {
         <div class="bg-navy-800 border border-white/10 rounded-2xl p-6">
           <h2 class="text-xl font-display font-bold text-white mb-6">Solicitar préstamo</h2>
           {equipo.available
-            ? <LoanEquipmentForm client:load equipmentId={equipo.id} equipmentName={equipo.name} />
+            ? (
+              <div class="text-center py-8">
+                <p class="text-white/60 mb-4">Para solicitar el préstamo de este equipo, por favor contáctanos:</p>
+                <a href="mailto:labarchivistica@udistrital.edu.co" class="inline-flex items-center gap-2 bg-accent-500 hover:bg-accent-600 text-white font-semibold px-6 py-3 rounded-lg transition-colors">
+                  Solicitar por correo
+                </a>
+              </div>
+            )
             : <p class="text-white/50 text-sm text-center py-8">Este equipo no está disponible actualmente. Consulta otros equipos o contáctanos.</p>
           }
         </div>

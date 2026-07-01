@@ -1,51 +1,52 @@
 # Lab Archivística UD — Frontend
 
-Interfaz web (UI) del sistema de gestión para el Laboratorio de Archivística de la Universidad Distrital Francisco José de Caldas. 
+Interfaz web del Laboratorio de Archivística y Humanidades Digitales de la Universidad Distrital Francisco José de Caldas.
 
 ## Stack
 
-* **Astro** (Framework web y generador de sitios)
-* **Tailwind CSS** (Framework de estilos de utilidad)
-* **Node.js** (Entorno de ejecución)
+- **Astro** v6 — Framework web y generador de sitios estáticos
+- **React** 19 — Componentes interactivos (formularios)
+- **Tailwind CSS** v4 — Estilos utilitarios
+- **TypeScript** — Tipado estático
 
-## Módulos
+## Estructura del proyecto
 
-| Módulo | Descripción |
+```
+src/
+├── assets/            # Imágenes y recursos estáticos
+├── components/        # Componentes reutilizables (.astro y .tsx)
+├── layouts/           # Layout base (Layout.astro)
+├── pages/             # Rutas del sitio
+│   ├── equipos/       # Catálogo y detalle de equipos
+│   ├── investigacion/ # Líneas de investigación
+│   ├── servicios/     # Servicios del laboratorio
+│   │   └── salas/     # Reserva de salas
+│   └── software/      # Catálogo de software
+└── styles/            # Estilos globales (Tailwind)
+```
+
+## Páginas
+
+| Ruta | Descripción |
 | :--- | :--- |
-| **Autenticación** | Vistas de login y registro para usuarios (dominio `@udistrital.edu.co`) |
-| **Equipos** | Vista en catálogo de los equipos de cómputo y digitalización del laboratorio |
-| **Software** | Portafolio visual del software especializado disponible para uso |
-| **Documentos** | Interfaz para la consulta, lectura y descarga de reglamentos y protocolos |
-| **Aplicativos** | Portal de acceso y enlaces directos a las herramientas archivísticas del ecosistema (AtoM, Archivematica, DSpace) |
-
+| `/` | Landing page con hero, servicios, software y contacto |
+| `/servicios` | Servicios del laboratorio (equipos, salas, software) |
+| `/equipos` | Catálogo de equipos disponibles para préstamo |
+| `/equipos/:id` | Detalle del equipo y solicitud de préstamo |
+| `/servicios/salas` | Reserva de salas con enlaces externos |
+| `/software` | Catálogo de software con acceso directo a herramientas |
+| `/investigacion` | Líneas y proyectos de investigación |
 
 ## Requisitos
 
-- Node.js 20 o superior (recomendado 22 LTS) - versión usada 26.1.0
+- Node.js 20 o superior (recomendado 22 LTS)
 - npm 10 o superior
 
-## Configuración
-
-### 1) Instalar dependencias
+## Desarrollo
 
 ```bash
-npm ci
-```
-
-### 2) Ejecutar en desarrollo - Para tener preview en localhost
-
-```bash
-npm run dev
-```
-
-### 3) Build de produccion
-
-```bash
-npm run build 
-```
-
-### 4) Preview local
-
-```bash
-npm run preview
+npm ci              # Instalar dependencias
+npm run dev         # Servidor de desarrollo (localhost:4321)
+npm run build       # Build de producción
+npm run preview     # Preview del build
 ```
