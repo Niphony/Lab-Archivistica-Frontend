@@ -2,13 +2,10 @@
 import Layout from '../../layouts/Layout.astro';
 
 const equipos = [
-  { id: 1, name: 'Computador de Escritorio', description: 'Equipo de cómputo de alta gama para procesamiento de datos y digitalización documental.', available: true, category: 'Cómputo' },
-  { id: 2, name: 'Escáner Planetario', description: 'Escáner de alta resolución para digitalización de documentos históricos en gran formato.', available: true, category: 'Digitalización' },
-  { id: 3, name: 'Laptop Portátil', description: 'Portátil con software especializado para trabajo de campo en archivística.', available: false, category: 'Cómputo' },
-  { id: 4, name: 'Cámara Digital', description: 'Cámara réflex digital para captura de imágenes de archivo.', available: true, category: 'Digitalización' },
-  { id: 5, name: 'Tableta Digitalizadora', description: 'Tableta para digitalización de planos y documentos de gran tamaño.', available: true, category: 'Digitalización' },
-  { id: 6, name: 'Servidor Portátil', description: 'Servidor portátil para almacenamiento y procesamiento in situ.', available: false, category: 'Cómputo' },
-];
+  { id: 1, name: 'Computadores', description: 'Equipo de cómputo de alta gama para procesamiento de datos y digitalización documental.', available: true, category: 'Cómputo' },
+  { id: 2, name: 'Escáneres', description: 'Escáner de alta resolución para digitalización de documentos históricos en gran formato.', available: true, category: 'Digitalización' },
+  { id: 3, name: 'Coleccion Bibliogragica', description: 'Colección de documentos para libre consulta, préstamo otorgado por la universidad.', available: true, category: 'Digitalización' },
+  ];
 
 export async function getStaticPaths() {
   return [
@@ -26,7 +23,7 @@ const equipo = equipos.find((e) => e.id === Number(id)) ?? null;
 ---
 <Layout title={equipo?.name ?? 'Equipo'}>
   <div class="max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-12">
-    <a href="/equipos" class="inline-flex items-center gap-2 text-white/50 hover:text-white text-sm mb-8 transition-colors">
+    <a href="/equipos" class="inline-flex items-center gap-2 text-accent-500 hover:text-accent-300 text-sm mb-8 transition-colors">
       <svg class="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"/></svg>
       Volver a equipos
     </a>
@@ -41,13 +38,13 @@ const equipo = equipos.find((e) => e.id === Number(id)) ?? null;
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25A2.25 2.25 0 015.25 3h13.5A2.25 2.25 0 0121 5.25z"/>
             </svg>
           </div>
-          <h1 class="text-3xl font-display font-bold text-white mb-2">{equipo.name}</h1>
+          <h1 class="text-3xl font-display font-bold text-shadow-blue-400 mb-2">{equipo.name}</h1>
           <span class={`text-sm px-3 py-1 rounded-full font-semibold inline-block mb-4 ${equipo.available ? 'bg-green-500/15 text-green-400' : 'bg-red-500/15 text-red-400'}`}>
             {equipo.available ? 'Disponible' : 'No disponible'}
           </span>
-          <p class="text-white/60 leading-relaxed">{equipo.description}</p>
-          <div class="mt-4 border-t border-white/10 pt-4">
-            <p class="text-sm text-white/40">Categoría: <span class="text-white/70">{equipo.category}</span></p>
+          <p class="text-shadow-blue-400/60 leading-relaxed">{equipo.description}</p>
+          <div class="mt-4 border-t border-black/10 pt-4">
+            <p class="text-sm text-shadow-blue-400/40">Categoría: <span class="text-shadow-blue-400/70">{equipo.category}</span></p>
           </div>
         </div>
 
