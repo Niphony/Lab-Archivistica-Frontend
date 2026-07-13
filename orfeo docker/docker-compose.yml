@@ -1,0 +1,46 @@
+
+services:
+  orfeo-db:
+    image: mariadb:10.6
+    container_name: orfeo-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root_password_seguro
+      MYSQL_DATABASE: orfeong_db
+      MYSQL_USER: usuario
+      MYSQL_PASSWORD: clave
+    volumes:
+      - orfeo_db_data:/var/lib/mysql
+
+  orfeo-backend:
+    build: ./orfeong_backend
+    container_name: orfeo-backend
+    restart: unless-stopped
+    ports:
+      # Expuesto hacia afuera en el puerto 8083
+      - "8083:80"
+    depends_on:
+      - orfeo-db
+    volumes:
+      # Persistencia de los documentos físicos subidos a Orfeo
+      - orfeo_bodega:/var/www/html/api/web/bodega
+
+  orfeo-frontend:
+    build: ./orfeong_frontend
+    container_name: orfeo-frontend
+    restart: unless-stopped
+    ports:
+      # Expuesto hacia afuera en el puerto 8082
+      - "8082:80"
+
+  orfeo-sockets:
+    build: ./orfeong_sockets
+    container_name: orfeo-sockets
+    restart: unless-stopped
+    ports:
+      # Expuesto hacia afuera en el puerto 3005
+      - "3005:3005"
+
+volumes:
+  orfeo_db_data:
+  orfeo_bodega:
