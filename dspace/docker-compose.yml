@@ -1,0 +1,76 @@
+# DSpace 8.x - Repositorio Digital
+# Stack: Java + Angular + PostgreSQL + Solr
+# Imagenes oficiales: https://hub.docker.com/r/dspace/dspace
+
+services:
+
+  dspacedb:
+    image: dspace/dspace-postgres-pgcrypto:dspace-8_x
+    container_name: dspace-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: dspace
+      POSTGRES_USER: dspace
+      POSTGRES_PASSWORD: dspace
+    volumes:
+      - pgdata:/pgdata
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "dspace"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - dspace-network
+
+  dspacesolr:
+    image: dspace/dspace-solr:dspace-8_x
+    container_name: dspace-solr
+    restart: unless-stopped
+    volumes:
+      - solr_data:/var/solr/data
+    networks:
+      - dspace-network
+
+  dspace:
+    image: dspace/dspace:dspace-8_x
+    container_name: dspace-api
+    restart: unless-stopped
+    depends_on:
+      dspacedb:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - assetstore:/dspace/assetstore
+      - ./local.cfg:/dspace/config/local.cfg:ro
+    networks:
+      - dspace-network
+
+  dspace-angular:
+    image: dspace/dspace-angular:dspace-8_x
+    container_name: dspace-frontend
+    restart: unless-stopped
+    depends_on:
+      - dspace
+    environment:
+      DSPACE_UI_SSL: "false"
+      DSPACE_UI_HOST: localhost
+      DSPACE_UI_PORT: 4000
+      DSPACE_UI_NAMESPACE: /
+      DSPACE_REST_SSL: "false"
+      DSPACE_REST_HOST: localhost
+      DSPACE_REST_PORT: 8080
+      DSPACE_REST_NAMESPACE: /server
+    ports:
+      - "127.0.0.1:4000:4000"
+    networks:
+      - dspace-network
+
+networks:
+  dspace-network:
+    driver: bridge
+
+volumes:
+  pgdata:
+  solr_data:
+  assetstore:
