@@ -1,0 +1,16 @@
+# ExifTool CLI en Docker
+# Uso:
+#   docker compose run --rm exiftool --help
+#   docker compose run --rm -v /ruta/local:/data exiftool /data/archivo.jpg
+
+services:
+  exiftool:
+    build: .
+    container_name: exiftool
+    image: lab/exiftool:latest
+    entrypoint: ["exiftool"]
+    working_dir: /data
+    volumes:
+      - ./data:/data
+    profiles:
+      - cli
