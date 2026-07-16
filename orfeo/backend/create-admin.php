@@ -2,50 +2,64 @@
 require __DIR__ . '/vendor/autoload.php';
 
 $config = require __DIR__ . '/common/config/main-local.php';
-$db = new $config['components']['db']['class']($config['components']['db']);
+$dbConfig = $config['components']['db'];
 
-$username = 'admin';
-$password = 'admin123--';
-$email = 'admin@labarchivistica.co';
+$dsn = $dbConfig['dsn'];
+$username = $dbConfig['username'];
+$password = $dbConfig['password'];
 
-$existing = $db->createCommand(
-    'SELECT id FROM user WHERE username = :u',
-    [':u' => $username]
-)->queryOne();
+try {
+    $pdo = new PDO($dsn, $username, $password, [
+        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+    ]);
+} catch (PDOException $e) {
+    echo "DB connection failed: " . $e->getMessage() . "\n";
+    exit(1);
+}
+
+$adminUser = 'admin';
+$adminPass = 'admin123--';
+$adminEmail = 'admin@labarchivistica.co';
+
+$stmt = $pdo->prepare('SELECT id FROM user WHERE username = :u');
+$stmt->execute([':u' => $adminUser]);
+$existing = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if ($existing) {
     echo "Admin user already exists (id={$existing['id']}). Skipping.\n";
     exit(0);
 }
 
-$passwordHash = password_hash($password, PASSWORD_BCRYPT);
+$passwordHash = password_hash($adminPass, PASSWORD_BCRYPT);
 
-$db->createCommand()->insert('user', [
-    'username' => $username,
-    'auth_key' => bin2hex(random_bytes(32)),
-    'password_hash' => $passwordHash,
-    'password_reset_token' => null,
-    'email' => $email,
-    'status' => 10,
-    'created_at' => time(),
-    'updated_at' => time(),
-    'verification_token' => bin2hex(random_bytes(32)),
-    'idRol' => 1,
-    'idUserTipo' => 1,
-    'idTipoIdentificacion' => 1,
-])->execute();
+$pdo->prepare('INSERT INTO user (username, auth_key, password_hash, email, status, created_at, updated_at, fechaVenceToken, accessToken, verification_token, idRol, idUserTipo, idGdTrdDependencia) VALUES (:u, :ak, :ph, :e, :s, :ca, :ua, :fvt, :at, :vt, :ir, :iut, :igd)')->execute([
+    ':u' => $adminUser,
+    ':ak' => bin2hex(random_bytes(16)),
+    ':ph' => $passwordHash,
+    ':e' => $adminEmail,
+    ':s' => 10,
+    ':ca' => time(),
+    ':ua' => time(),
+    ':fvt' => date('Y-m-d H:i:s', strtotime('+1 year')),
+    ':at' => bin2hex(random_bytes(32)),
+    ':vt' => bin2hex(random_bytes(32)),
+    ':ir' => 1,
+    ':iut' => 1,
+    ':igd' => 1,
+]);
 
-$userId = $db->getLastInsertID();
+$userId = $pdo->lastInsertId();
 
-$db->createCommand()->insert('userDetalles', [
-    'idUser' => $userId,
-    'nombres' => 'Administrador',
-    'apellidos' => 'del Sistema',
-    'documento' => '0000000000',
-    'idTipoPersona' => 1,
-    'telefono' => '0000000000',
-    'direccion' => 'Oficina Principal',
-])->execute();
+$pdo->prepare('INSERT INTO userDetalles (idUser, nombreUserDetalles, apellidoUserDetalles, documento, cargoUserDetalles, idTipoIdentificacion, creacionUserDetalles, estadoUserDetalles) VALUES (:id, :n, :a, :d, :c, :iti, :cu, :eu)')->execute([
+    ':id' => $userId,
+    ':n' => 'Administrador',
+    ':a' => 'del Sistema',
+    ':d' => '0000000000',
+    ':c' => 'Administrador del Sistema',
+    ':iti' => 1,
+    ':cu' => time(),
+    ':eu' => 10,
+]);
 
 echo "Admin user created successfully!\n";
 echo "Username: admin\n";

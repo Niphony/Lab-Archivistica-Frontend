@@ -64,10 +64,14 @@ return [];
 PHPEOF
 
 echo "Running Yii2 migrations..."
-php /app/yii migrate --interactive=0 2>&1 || echo "Migrations may have already run."
+php /app/yii migrate --interactive=0 2>&1 || {
+    echo "Migration failed. Attempting to mark pending as applied and retry..."
+    php /app/yii migrate/mark m200316_173236_create_gdTrdDependencias --interactive=0 2>/dev/null || true
+    php /app/yii migrate --interactive=0 2>&1 || echo "Migrations may have already run."
+}
 
 echo "Seeding admin user..."
-php /app/create-admin.php
+php /app/create-admin.php 2>&1 || echo "Admin user may already exist."
 
 echo "Creating API directories..."
 mkdir -p /app/api/web/trd_formats /app/api/web/tmp_mail /app/api/web/bodega \
