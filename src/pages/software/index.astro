@@ -1,13 +1,17 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 
+const BASE_URL = import.meta.env.PROD
+  ? 'http://labhumanidades.udistrital.edu.co'
+  : 'http://localhost';
+
 const softwares = [
-  { id: 1, name: 'DSpace', version: '8.x', category: 'Repositorio Digital', licenseType: 'Open Source', description: 'Plataforma de código abierto para la creación de repositorios digitales institucionales. Permite la gestión, preservación y difusión de la producción académica y científica.', internalUrl: 'http://labhumanidades.udistrital.edu.co:4000' },
-  { id: 2, name: 'Archivematica', version: '1.x', category: 'Preservación Digital', licenseType: 'Open Source', description: 'Sistema de preservación digital automatizado que implementa flujos de trabajo basados en estándares internacionales (OAIS, PREMIS, METS).', internalUrl: 'http://labhumanidades.udistrital.edu.co:62080' },
-  { id: 3, name: 'AtoM', version: '2.x', category: 'Descripción Archivística', licenseType: 'Open Source', description: 'Aplicación web para descripción archivística basada en estándares ISAD(G), ISAAR(CPF) e ISDIAH.', internalUrl: 'http://labhumanidades.udistrital.edu.co:63001' },
-  { id: 4, name: 'Orfeo', version: '5.x', category: 'Gestión Documental', licenseType: 'Propietario', description: 'Sistema de gestión documental y administración de archivos.' },
-  { id: 5, name: 'Apache Tika', version: '3.x', category: 'Extracción de Metadatos', licenseType: 'Apache 2.0', description: 'Kit de herramientas para detección y extracción de metadatos y contenido de documentos en múltiples formatos.', internalUrl: 'http://labhumanidades.udistrital.edu.co:9998' },
-  { id: 6, name: 'ExifTool', version: '13.x', category: 'Metadatos', licenseType: 'Perl', description: 'Herramienta para leer, escribir y editar metadatos de archivos multimedia y documentos.' },
+  { id: 1, name: 'DSpace', version: '8.x', category: 'Repositorio Digital', licenseType: 'Open Source', description: 'Plataforma de código abierto para la creación de repositorios digitales institucionales. Permite la gestión, preservación y difusión de la producción académica y científica.', url: '/dspace/' },
+  { id: 2, name: 'Archivematica', version: '1.x', category: 'Preservación Digital', licenseType: 'Open Source', description: 'Sistema de preservación digital automatizado que implementa flujos de trabajo basados en estándares internacionales (OAIS, PREMIS, METS).' },
+  { id: 3, name: 'AtoM', version: '2.x', category: 'Descripción Archivística', licenseType: 'Open Source', description: 'Aplicación web para descripción archivística basada en estándares ISAD(G), ISAAR(CPF) e ISDIAH.', url: '/atom/' },
+  { id: 4, name: 'Orfeo', version: '5.x', category: 'Gestión Documental', licenseType: 'Open Source', description: 'Sistema de gestión documental y administración de archivos (SGDEA). Cumple con normatividad colombiana AGN y estándar MOREQ.', url: '/orfeo/' },
+  { id: 5, name: 'Apache Tika', version: '3.x', category: 'Extracción de Metadatos', licenseType: 'Apache 2.0', description: 'Kit de herramientas para detección y extracción de metadatos y contenido de documentos en múltiples formatos.', url: '/tika/' },
+  { id: 6, name: 'ExifTool', version: '13.x', category: 'Metadatos', licenseType: 'Perl', description: 'Herramienta CLI para leer, escribir y editar metadatos de archivos multimedia y documentos.' },
 ];
 
 const categories = [...new Set(softwares.map(s => s.category))];
