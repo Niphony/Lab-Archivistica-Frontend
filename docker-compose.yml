@@ -1,4 +1,6 @@
 services:
+
+  # ── Proxy global (público en :80) ──
   nginx:
     image: nginx:1.25-alpine
     container_name: lab-proxy
@@ -7,5 +9,181 @@ services:
       - "80:80"
     volumes:
       - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
+    depends_on:
+      - orfeo-nginx
+      - dspace-angular
+      - apache-tika
+    networks:
+      - lab-network
+
+  # ── OrfeoNG ──
+  orfeo-mysql:
+    image: mysql:5.7
+    container_name: orfeo-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_secret_2026}
+      MYSQL_DATABASE: ${DB_NAME:-orfeoNG_db}
+      MYSQL_USER: ${DB_USER:-orfeo}
+      MYSQL_PASSWORD: ${DB_PASS:-orfeo123}
+    ports:
+      - "127.0.0.1:3307:3306"
+    volumes:
+      - orfeo_mysql_data:/var/lib/mysql
+      - ./orfeo/db/init.sql:/docker-entrypoint-initdb.d/01-init.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-root_secret_2026}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - lab-network
+
+  orfeo-backend:
+    build:
+      context: ./orfeo/backend
+      args:
+        BACKEND_REPO: ${BACKEND_REPO:-https://github.com/skinatech/orfeong_backend.git}
+    container_name: orfeo-backend
+    restart: unless-stopped
+    depends_on:
+      orfeo-mysql:
+        condition: service_healthy
+    environment:
+      DB_HOST: orfeo-mysql
+      DB_PORT: 3306
+      DB_NAME: ${DB_NAME:-orfeoNG_db}
+      DB_USER: ${DB_USER:-orfeo}
+      DB_PASS: ${DB_PASS:-orfeo123}
+      AES_KEY: ${AES_KEY:-aegoh3quai3Aijum7cae0ithefo_uv}
+      SERVER_URL: ${SERVER_URL:-http://localhost:64000}
+    networks:
+      - lab-network
+
+  orfeo-frontend:
+    build:
+      context: ./orfeo/frontend
+      args:
+        FRONTEND_REPO: ${FRONTEND_REPO:-https://github.com/skinatech/orfeong_frontend.git}
+        API_URL: /ng_backend/api/web/
+        API_BASE_PATH: /ng_backend
+        FRONT_URL: /orfeo-ng/
+        SOCKET_ENDPOINT: /socket
+        AES_KEY: ${AES_KEY:-aegoh3quai3Aijum7cae0ithefo_uv}
+    container_name: orfeo-frontend
+    restart: unless-stopped
+    depends_on:
+      - orfeo-backend
+    networks:
+      - lab-network
+
+  orfeo-sockets:
+    build:
+      context: ./orfeo/sockets
+      args:
+        SOCKETS_REPO: ${SOCKETS_REPO:-https://github.com/skinatech/orfeong_sockets.git}
+    container_name: orfeo-sockets
+    restart: unless-stopped
+    networks:
+      - lab-network
+
+  orfeo-nginx:
+    image: nginx:1.25-alpine
+    container_name: orfeo-nginx
+    restart: unless-stopped
+    ports:
+      - "${PORT:-64000}:80"
+    volumes:
+      - ./orfeo/nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - orfeo-frontend
+      - orfeo-backend
+      - orfeo-sockets
+    networks:
+      - lab-network
+
+  # ── DSpace 8.x ──
+  dspacedb:
+    image: dspace/dspace-postgres-pgcrypto:dspace-8_x
+    container_name: dspace-db
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: dspace
+      POSTGRES_USER: dspace
+      POSTGRES_PASSWORD: dspace
+    volumes:
+      - dspace_pgdata:/pgdata
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "dspace"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - lab-network
+
+  dspacesolr:
+    image: dspace/dspace-solr:dspace-8_x
+    container_name: dspace-solr
+    restart: unless-stopped
+    volumes:
+      - dspace_solr_data:/var/solr/data
+    networks:
+      - lab-network
+
+  dspace:
+    image: dspace/dspace:dspace-8_x
+    container_name: dspace-api
+    restart: unless-stopped
+    depends_on:
+      dspacedb:
+        condition: service_healthy
+      dspacesolr:
+        condition: service_started
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - dspace_assetstore:/dspace/assetstore
+      - ./dspace/local.cfg:/dspace/config/local.cfg:ro
+    networks:
+      - lab-network
+
+  dspace-angular:
+    image: dspace/dspace-angular:dspace-8_x
+    container_name: dspace-frontend
+    restart: unless-stopped
+    depends_on:
+      - dspace
+    environment:
+      DSPACE_UI_SSL: "false"
+      DSPACE_UI_HOST: localhost
+      DSPACE_UI_PORT: 4000
+      DSPACE_UI_NAMESPACE: /
+      DSPACE_REST_SSL: "false"
+      DSPACE_REST_HOST: localhost
+      DSPACE_REST_PORT: 8080
+      DSPACE_REST_NAMESPACE: /server
+    ports:
+      - "127.0.0.1:4000:4000"
+    networks:
+      - lab-network
+
+  # ── Tika ──
+  apache-tika:
+    image: apache/tika:latest-full
+    container_name: apache-tika
+    restart: unless-stopped
+    ports:
+      - "127.0.0.1:9998:9998"
+    networks:
+      - lab-network
+
+networks:
+  lab-network:
+    driver: bridge
+
+volumes:
+  orfeo_mysql_data:
+    driver: local
+  dspace_pgdata:
+  dspace_solr_data:
+  dspace_assetstore:
