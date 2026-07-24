@@ -7,16 +7,16 @@ const BASE_URL = import.meta.env.PROD
 
 const softwares = [
   { id: 1, name: 'DSpace', version: '8.x', category: 'Repositorio Digital', licenseType: 'Open Source', description: 'Plataforma de código abierto para la creación de repositorios digitales institucionales. Permite la gestión, preservación y difusión de la producción académica y científica.', url: '/dspace/' },
-  { id: 2, name: 'Archivematica', version: '1.x', category: 'Preservación Digital', licenseType: 'Open Source', description: 'Sistema de preservación digital automatizado que implementa flujos de trabajo basados en estándares internacionales (OAIS, PREMIS, METS).' },
+  { id: 2, name: 'Archivematica', version: '1.x', category: 'Preservación Digital', licenseType: 'Open Source', description: 'Sistema de preservación digital automatizado que implementa flujos de trabajo basados en estándares internacionales (OAIS, PREMIS, METS).', url: '/archivematica/' },
   { id: 3, name: 'AtoM', version: '2.x', category: 'Descripción Archivística', licenseType: 'Open Source', description: 'Aplicación web para descripción archivística basada en estándares ISAD(G), ISAAR(CPF) e ISDIAH.', url: '/atom/' },
   { id: 4, name: 'Orfeo', version: '5.x', category: 'Gestión Documental', licenseType: 'Open Source', description: 'Sistema de gestión documental y administración de archivos (SGDEA). Cumple con normatividad colombiana AGN y estándar MOREQ.', url: '/orfeo/' },
   { id: 5, name: 'Apache Tika', version: '3.x', category: 'Extracción de Metadatos', licenseType: 'Apache 2.0', description: 'Kit de herramientas para detección y extracción de metadatos y contenido de documentos en múltiples formatos.', url: '/tika/' },
-  { id: 6, name: 'ExifTool', version: '13.x', category: 'Metadatos', licenseType: 'Perl', description: 'Herramienta CLI para leer, escribir y editar metadatos de archivos multimedia y documentos.' },
+  { id: 6, name: 'ExifTool', version: '13.x', category: 'Metadatos', licenseType: 'Perl', description: 'Herramienta CLI para leer, escribir y editar metadatos de archivos multimedia y documentos.', url: '/exiftool/' },
 ];
 
 const categories = [...new Set(softwares.map(s => s.category))];
 
-const highlights = softwares.filter(s => s.internalUrl);
+const highlights = softwares.filter(s => s.url);
 ---
 <Layout title="Software">
   <section class="bg-navy-900 border-b border-white/10 py-12">
@@ -39,7 +39,7 @@ const highlights = softwares.filter(s => s.internalUrl);
         <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
           {highlights.map((sw) => (
             <a
-              href={sw.internalUrl}
+              href={sw.url}
               class="group flex items-center gap-5 bg-navy-900/80 hover:bg-navy-900 border border-white/10 hover:border-accent-400/50 rounded-xl p-5 transition-all duration-300"
             >
               <div class="w-14 h-14 bg-accent-500/10 border border-accent-500/20 rounded-xl flex items-center justify-center shrink-0 group-hover:bg-accent-500/20 group-hover:scale-110 transition-all">
@@ -90,8 +90,8 @@ const highlights = softwares.filter(s => s.internalUrl);
           <h3 class="font-display font-bold text-white mb-1">{sw.name}</h3>
           <p class="text-accent-400/70 text-xs mb-2">v{sw.version} · {sw.category}</p>
           <p class="text-white/50 text-sm line-clamp-3">{sw.description}</p>
-          {sw.internalUrl && (
-            <a href={sw.internalUrl} class="mt-4 inline-flex items-center gap-1.5 text-accent-400 text-sm font-semibold hover:text-accent-300 transition-colors group/link">
+          {sw.url && (
+            <a href={sw.url} class="mt-4 inline-flex items-center gap-1.5 text-accent-400 text-sm font-semibold hover:text-accent-300 transition-colors group/link">
               Acceder
               <svg class="w-3.5 h-3.5 group-hover/link:translate-x-1 transition-transform" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
                 <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
