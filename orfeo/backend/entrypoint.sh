@@ -6,7 +6,7 @@ DB_PORT="${DB_PORT:-3306}"
 DB_NAME="${DB_NAME:-orfeoNG_db}"
 DB_USER="${DB_USER:-orfeo}"
 DB_PASS="${DB_PASS:-orfeo123}"
-AES_KEY="${AES_KEY:-aegoh3quai3Aijum7cae0theifo}uv}"
+AES_KEY="${AES_KEY:-aegoh3quai3Aijum7cae0ithefo_uv}"
 SERVER_URL="${SERVER_URL:-http://localhost:64000}"
 
 echo "Waiting for MySQL at $DB_HOST:$DB_PORT..."
