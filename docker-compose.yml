@@ -162,12 +162,15 @@ services:
     depends_on:
       - dspace
     environment:
+      # Configuración de la UI (Frontend)
       DSPACE_UI_SSL: "false"
       DSPACE_UI_HOST: 0.0.0.0
       DSPACE_UI_PORT: 4000
       DSPACE_UI_NAMESPACE: /dspace/
+      
+      # Configuración del REST (Backend)
       DSPACE_REST_SSL: "false"
-      DSPACE_REST_HOST: localhost
+      DSPACE_REST_HOST: labhumanidades.udistrital.edu.co
       DSPACE_REST_PORT: 80
       DSPACE_REST_NAMESPACE: /dspace/server
     ports:

@@ -50,3 +50,19 @@ npm run dev         # Servidor de desarrollo (localhost:4321)
 npm run build       # Build de producción
 npm run preview     # Preview del build
 ```
+
+
+
+## Para las apps
+
+Para montarlas:
+
+```bash
+./gestor-app-lab.sh up
+```
+Para bajarlas:
+```bash
+./gestor-app-lab.sh down
+```
+
+

@@ -1,6 +1,5 @@
 #!/bin/sh
 set -e
-
 DB_HOST="${DB_HOST:-mysql}"
 DB_PORT="${DB_PORT:-3306}"
 DB_NAME="${DB_NAME:-orfeoNG_db}"
@@ -8,6 +7,8 @@ DB_USER="${DB_USER:-orfeo}"
 DB_PASS="${DB_PASS:-orfeo123}"
 AES_KEY="${AES_KEY:-aegoh3quai3Aijum7cae0ithefo_uv}"
 SERVER_URL="${SERVER_URL:-http://localhost:64000}"
+ADMIN_EMAIL="${ADMIN_EMAIL:-admin@labhumanidades.udistrital.edu.co}"
+CLIENTE_NOMBRE="${CLIENTE_NOMBRE:-Laboratorio de Archivistica y Humanidades Digitales}"
 
 echo "Waiting for MySQL at $DB_HOST:$DB_PORT..."
 until nc -z "$DB_HOST" "$DB_PORT" 2>/dev/null; do
@@ -43,12 +44,51 @@ return [
     'debugAES' => false,
     'ipServer' => '$SERVER_URL/orfeo-ng/#/',
     'urlBaseApiPublic' => '$SERVER_URL/ng_backend/frontend/web/',
-    'motorDB' => 'MYSQL',
-    'userPublicPage' => 'anonimo',
-    'passwordPublicPage' => '4n0N1m0\$',
+    'debugMailActive' => true,
+    'debugEmail' => '$ADMIN_EMAIL',
+
     'separadorEstructuraRadicado' => '-',
     'tipoConsecutivoRadicado' => 'tipoRad&regional',
     'activateRadiTmp' => true,
+    'radiSendReplyEMail' => '$ADMIN_EMAIL',
+
+    'motorDB' => 'MYSQL',
+
+    'userPublicPage' => 'anonimo',
+    'passwordPublicPage' => '4n0N1m0\$',
+
+    'idRemitenteAnonimo' => 3,
+
+    'autenticacion' => '0',
+    'dominio' => 'labhumanidades.udistrital.edu.co',
+
+    'cliente' => '$CLIENTE_NOMBRE',
+    'nit' => 'xxxxxx',
+    'etiquetaCliente' => 'LABHUMANIDADES',
+    'fondo' => '$CLIENTE_NOMBRE',
+    'entidad' => '$CLIENTE_NOMBRE',
+
+    'rutaLogo' => 'vertical-color_aero.png',
+    'rutaLogoPrint' => 'vertical-color_aero_printsticker.png',
+    'rutaLogoPdf' => 'vertical-color_aero.png',
+
+    'usuarioNotificadorTransferencia' => '$ADMIN_EMAIL',
+    'terminosCondiciones' => 'Autorizo el tratamiento de mis datos personales conforme a la Ley 1581 de 2012 y el Decreto 1377 de 2013.',
+    'longitudDependencia' => 5,
+    'lengthNumberFiling' => 6,
+
+    'diasNotificacion' => 3,
+    'usuarioNotificadorPqrs' => '$ADMIN_EMAIL',
+    'RolUserPqrs' => 'Usuario Externo',
+    'idDependenciaUserPqrs' => 1,
+    'idUserTramitadorPqrs' => 1,
+    'idTramitePqrs' => 1,
+    'cargoUserPqrs' => 'Usuario Externo',
+    'idGdTrdTipoDocumentalPqrs' => 1,
+    'diasRespuestaPqrs' => 5,
+
+    'codigoradicado' => 'texto',
+
     'CgTipoRadicado' => [
         'radiSalida' => 'SAL',
         'radiEntrada' => 'ENT',

@@ -21,6 +21,8 @@ RUN cp api/web/index.php.dist api/web/index.php
 
 RUN php init --env=Production --overwrite=All --no-interaction
 
+RUN sed -i "s/if (!YII_ENV_TEST) {/if (YII_ENV_DEV) {/" api/config/main-local.php
+
 RUN chmod 0777 api/runtime api/web/assets backend/runtime backend/web/assets \
     console/runtime frontend/runtime frontend/web/assets
 
