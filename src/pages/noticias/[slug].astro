@@ -31,6 +31,10 @@ const formattedDate = `${d.getUTCDate()} de ${meses[d.getUTCMonth()]} de ${d.get
         Volver a noticias
       </a>
 
+      {entry.data.image && (
+        <img src={entry.data.image} alt="" class="w-full h-48 sm:h-64 object-contain mb-8 rounded-xl bg-navy-800/50 p-4" />
+      )}
+
       <div class="flex items-center gap-2 text-xs text-white/40 mb-4">
         <time datetime={entry.data.date.toISOString()}>{formattedDate}</time>
         {entry.data.author && (

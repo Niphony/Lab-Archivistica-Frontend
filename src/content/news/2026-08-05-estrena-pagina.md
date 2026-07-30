@@ -3,6 +3,7 @@ title: "Laboratorio de Archivística estrena página web"
 date: 2026-08-05
 excerpt: "El laboratorio lanza su nuevo sitio web con información sobre servicios, equipos, software y noticias del espacio académico."
 author: "Juan Carlos Quintero"
+image: "/images/news/website.svg"
 ---
 
 El Laboratorio de Archivística y Tecnologías Digitales estrena su nueva página web, un espacio digital diseñado para centralizar la información sobre los servicios, equipos y herramientas tecnológicas disponibles para la comunidad universitaria.

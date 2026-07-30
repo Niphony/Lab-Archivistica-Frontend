@@ -10,6 +10,7 @@ const slides = [
     eyebrow: 'Universidad Distrital',
     title: 'Laboratorio de Archivística y Tecnologías Digitales',
     subtitle: 'Gestión, análisis y transformación de la información con tecnología, innovación y compromiso social.',
+    image: null,
     cta: [
       { label: 'Solicitud de Paz y Salvo', href: 'https://forms.office.com/pages/responsepage.aspx?id=74gT1bBqY0OflNVmRKRZcCYdtW4rSUhOkGItZSP0FSVUQlU5QVFCQlJBWFE2QVhHRVk5S1k1ODZOOS4u&route=shorturl', primary: true },
       { label: 'Reservar laboratorio', href: 'https://forms.cloud.microsoft/pages/responsepage.aspx?id=74gT1bBqY0OflNVmRKRZcCYdtW4rSUhOkGItZSP0FSVUMkxQQTdaVUxZMlg4RTIyMFhJMTNJUU5RRC4u&route=shorturl', primary: false },
@@ -19,6 +20,7 @@ const slides = [
     eyebrow: (() => { const d = n.data.date; const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre']; return `${d.getUTCDate()} de ${meses[d.getUTCMonth()]} de ${d.getUTCFullYear()}`; })(),
     title: n.data.title,
     subtitle: n.data.excerpt,
+    image: n.data.image || null,
     cta: [{ label: 'Leer noticia', href: `/noticias/${n.id}/`, primary: true }],
   })),
 ];
@@ -29,30 +31,40 @@ const slides = [
   <div class="absolute right-0 top-0 w-2/3 h-full bg-gradient-to-l from-accent-600/10 via-transparent to-transparent pointer-events-none"></div>
   <div class="absolute right-20 top-1/2 -translate-y-1/2 w-96 h-96 bg-accent-500/5 rounded-full blur-3xl pointer-events-none"></div>
 
-  <!-- Blueprint illustration -->
-  <div class="absolute right-0 top-0 bottom-0 w-1/2 hidden lg:flex items-center justify-center overflow-hidden pointer-events-none">
-    <div class="relative w-full h-full flex items-center justify-end pr-8">
-      <svg viewBox="0 0 520 480" class="w-[440px] h-[400px] opacity-20 text-accent-400" fill="none" stroke="currentColor" stroke-width="0.8">
-        <rect x="100" y="80" width="320" height="240" rx="8" stroke-width="1.5"/>
-        <rect x="110" y="90" width="300" height="220" rx="4"/>
-        <line x1="130" y1="120" x2="280" y2="120"/>
-        <line x1="130" y1="135" x2="260" y2="135"/>
-        <line x1="130" y1="150" x2="300" y2="150"/>
-        <line x1="130" y1="165" x2="240" y2="165"/>
-        <rect x="130" y="180" width="80" height="60" rx="2"/>
-        <rect x="225" y="180" width="80" height="60" rx="2"/>
-        <circle cx="400" cy="120" r="40" stroke-dasharray="5 3"/>
-        <circle cx="400" cy="120" r="25"/>
-        <circle cx="400" cy="120" r="5" fill="currentColor" stroke="none"/>
-        <path d="M60 60 L60 40 L80 40"/>
-        <path d="M460 60 L460 40 L440 40"/>
-        <path d="M60 380 L60 400 L80 400"/>
-        <path d="M460 380 L460 400 L440 400"/>
-        <line x1="60" y1="430" x2="460" y2="430" stroke-dasharray="4 2"/>
-        <rect x="350" y="270" width="100" height="55" rx="3"/>
-      </svg>
+  <!-- Right illustration (blueprint or news image) -->
+  {slides.map((slide, i) => (
+    <div
+      class="hero-illustration absolute right-0 top-0 bottom-0 w-1/2 hidden lg:flex items-center justify-center overflow-hidden transition-opacity duration-700 ease-in-out"
+      class:list={{ 'opacity-0': i !== 0, 'opacity-100': i === 0 }}
+      data-index={i}
+    >
+      {slide.image ? (
+        <img src={slide.image} alt="" class="w-full h-full object-contain p-8" />
+      ) : (
+        <div class="relative w-full h-full flex items-center justify-end pr-8">
+          <svg viewBox="0 0 520 480" class="w-[440px] h-[400px] opacity-20 text-accent-400" fill="none" stroke="currentColor" stroke-width="0.8">
+            <rect x="100" y="80" width="320" height="240" rx="8" stroke-width="1.5"/>
+            <rect x="110" y="90" width="300" height="220" rx="4"/>
+            <line x1="130" y1="120" x2="280" y2="120"/>
+            <line x1="130" y1="135" x2="260" y2="135"/>
+            <line x1="130" y1="150" x2="300" y2="150"/>
+            <line x1="130" y1="165" x2="240" y2="165"/>
+            <rect x="130" y="180" width="80" height="60" rx="2"/>
+            <rect x="225" y="180" width="80" height="60" rx="2"/>
+            <circle cx="400" cy="120" r="40" stroke-dasharray="5 3"/>
+            <circle cx="400" cy="120" r="25"/>
+            <circle cx="400" cy="120" r="5" fill="currentColor" stroke="none"/>
+            <path d="M60 60 L60 40 L80 40"/>
+            <path d="M460 60 L460 40 L440 40"/>
+            <path d="M60 380 L60 400 L80 400"/>
+            <path d="M460 380 L460 400 L440 400"/>
+            <line x1="60" y1="430" x2="460" y2="430" stroke-dasharray="4 2"/>
+            <rect x="350" y="270" width="100" height="55" rx="3"/>
+          </svg>
+        </div>
+      )}
     </div>
-  </div>
+  ))}
 
   <!-- Slides container (no relative — slides position to section) -->
   <div class="z-10 w-full h-full">
@@ -130,6 +142,7 @@ const slides = [
   if (!container) throw new Error('hero-carousel not found');
 
   const slides = container.querySelectorAll('.hero-slide');
+  const illustrations = container.querySelectorAll('.hero-illustration');
   const dots = container.querySelectorAll('.carousel-dot');
   const prevBtn = document.getElementById('carousel-prev');
   const nextBtn = document.getElementById('carousel-next');
@@ -141,6 +154,10 @@ const slides = [
   function goTo(index) {
     if (index === current) return;
     slides.forEach((s, i) => {
+      s.classList.toggle('opacity-0', i !== index);
+      s.classList.toggle('opacity-100', i === index);
+    });
+    illustrations.forEach((s, i) => {
       s.classList.toggle('opacity-0', i !== index);
       s.classList.toggle('opacity-100', i === index);
     });
