@@ -2,7 +2,7 @@
 title: "Nuevo DSpace 10 disponible y funcional"
 date: 2026-07-30
 excerpt: "El repositorio digital del laboratorio ha sido actualizado a DSpace 10. Ya se encuentra operativo con nuevas funcionalidades y mejor rendimiento."
-author: "Juan Carlos Quintero"
+author: "Nicolas Acevedo"
 ---
 
 El Laboratorio de Archivística ha completado la migración a **DSpace 10**, la versión más reciente del popular sistema de repositorios digitales de código abierto. La plataforma ya se encuentra disponible y totalmente funcional para la comunidad universitaria.

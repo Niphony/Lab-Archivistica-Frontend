@@ -2,7 +2,7 @@
 title: "Taller de Preservación Digital: Introducción a Archivematica"
 date: 2026-08-15
 excerpt: "Aprende los fundamentos de la preservación digital con Archivematica, la herramienta open source que automatiza flujos de trabajo OAIS."
-author: "Juan Carlos Quintero"
+author: "Nicolas Acevedo"
 ---
 
 El próximo 15 de agosto se llevará a cabo el taller introductorio de preservación digital usando Archivematica. El taller está dirigido a estudiantes de ingeniería de sistemas y archivística interesados en la conservación de documentos digitales.
