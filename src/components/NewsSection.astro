@@ -1,0 +1,63 @@
+---
+import { getCollection } from 'astro:content';
+import NewsCard from './NewsCard.astro';
+
+const allNews = await getCollection('news');
+allNews.sort((a, b) => b.data.date.valueOf() - a.data.date.valueOf());
+const latest = allNews.slice(0, 4);
+---
+
+<section class="bg-navy-950 py-16 lg:py-20">
+  <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <div class="flex items-end justify-between mb-10">
+      <div>
+        <div class="flex items-center gap-2 mb-3">
+          <div class="w-6 h-px bg-accent-400"></div>
+          <span class="text-accent-400 text-xs font-semibold tracking-widest uppercase">Noticias</span>
+        </div>
+        <h2 class="font-display font-bold text-white text-2xl sm:text-3xl">Últimas del laboratorio</h2>
+      </div>
+      {allNews.length > 4 && (
+        <a
+          href="/noticias/"
+          class="hidden sm:inline-flex items-center gap-1.5 text-accent-400 text-sm font-semibold hover:text-accent-300 transition-colors group"
+        >
+          Ver todas
+          <svg class="w-3.5 h-3.5 transition-transform group-hover:translate-x-1" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
+          </svg>
+        </a>
+      )}
+    </div>
+
+    {latest.length > 0 ? (
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
+        {latest.map((n) => (
+          <NewsCard
+            title={n.data.title}
+            date={n.data.date}
+            excerpt={n.data.excerpt}
+            id={n.id}
+            author={n.data.author}
+          />
+        ))}
+      </div>
+    ) : (
+      <p class="text-white/40 text-center py-12">No hay noticias publicadas aún.</p>
+    )}
+
+    {allNews.length > 4 && (
+      <div class="mt-8 text-center sm:hidden">
+        <a
+          href="/noticias/"
+          class="inline-flex items-center gap-1.5 text-accent-400 text-sm font-semibold hover:text-accent-300 transition-colors"
+        >
+          Ver todas las noticias
+          <svg class="w-3.5 h-3.5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+            <path stroke-linecap="round" stroke-linejoin="round" d="M13.5 4.5L21 12m0 0l-7.5 7.5M21 12H3"/>
+          </svg>
+        </a>
+      </div>
+    )}
+  </div>
+</section>
