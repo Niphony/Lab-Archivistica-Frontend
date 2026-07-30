@@ -13,15 +13,13 @@ export async function getStaticPaths() {
 const { entry } = Astro.props;
 const { Content } = await render(entry);
 
-const formattedDate = entry.data.date.toLocaleDateString('es-CO', {
-  year: 'numeric',
-  month: 'long',
-  day: 'numeric',
-});
+const d = entry.data.date;
+const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+const formattedDate = `${d.getUTCDate()} de ${meses[d.getUTCMonth()]} de ${d.getUTCFullYear()}`;
 ---
 
 <Layout title={`${entry.data.title} — Noticias`}>
-  <article class="bg-navy-950 min-h-screen">
+  <article class="bg-navy-900 min-h-screen">
     <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-20">
       <a
         href="/noticias/"
@@ -47,7 +45,7 @@ const formattedDate = entry.data.date.toLocaleDateString('es-CO', {
         {entry.data.title}
       </h1>
 
-      <div class="prose prose-invert prose-accent max-w-none">
+      <div class="prose prose-invert prose-accent max-w-none text-white/80 prose-headings:text-white prose-strong:text-white prose-a:text-accent-400">
         <Content />
       </div>
     </div>

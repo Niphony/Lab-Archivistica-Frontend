@@ -16,7 +16,7 @@ const slides = [
     ],
   },
   ...featuredNews.map((n) => ({
-    eyebrow: `${n.data.date.toLocaleDateString('es-CO', { year: 'numeric', month: 'long', day: 'numeric' })}`,
+    eyebrow: (() => { const d = n.data.date; const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre']; return `${d.getUTCDate()} de ${meses[d.getUTCMonth()]} de ${d.getUTCFullYear()}`; })(),
     title: n.data.title,
     subtitle: n.data.excerpt,
     cta: [{ label: 'Leer noticia', href: `/noticias/${n.id}/`, primary: true }],

@@ -9,11 +9,8 @@ export interface Props {
 
 const { title, date, excerpt, id, author } = Astro.props;
 
-const formattedDate = date.toLocaleDateString('es-CO', {
-  year: 'numeric',
-  month: 'long',
-  day: 'numeric',
-});
+const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+const formattedDate = `${date.getUTCDate()} de ${meses[date.getUTCMonth()]} de ${date.getUTCFullYear()}`;
 ---
 
 <article class="group bg-navy-800/50 border border-white/10 rounded-xl overflow-hidden hover:border-accent-500/30 transition-all duration-300 hover:shadow-lg hover:shadow-accent-500/5 flex flex-col">
