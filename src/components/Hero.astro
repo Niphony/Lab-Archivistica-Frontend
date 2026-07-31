@@ -138,56 +138,68 @@ const slides = [
 </section>
 
 <script>
-  const container = document.getElementById('hero-carousel');
-  if (!container) throw new Error('hero-carousel not found');
+  let interval;
 
-  const slides = container.querySelectorAll('.hero-slide');
-  const illustrations = container.querySelectorAll('.hero-illustration');
-  const dots = container.querySelectorAll('.carousel-dot');
-  const prevBtn = document.getElementById('carousel-prev');
-  const nextBtn = document.getElementById('carousel-next');
+  function initCarousel() {
+    const container = document.getElementById('hero-carousel');
+    if (!container) return; 
 
-  let current = 0;
-  const total = slides.length;
-  let isPaused = false; // <-- reemplaza a "let interval;"
+    const slides = container.querySelectorAll('.hero-slide');
+    const illustrations = container.querySelectorAll('.hero-illustration');
+    const dots = container.querySelectorAll('.carousel-dot');
+    const prevBtn = document.getElementById('carousel-prev');
+    const nextBtn = document.getElementById('carousel-next');
 
-  function goTo(index) {
-    if (index === current) return;
-    slides.forEach((s, i) => {
-      s.classList.toggle('opacity-0', i !== index);
-      s.classList.toggle('opacity-100', i === index);
-      s.classList.toggle('pointer-events-none', i !== index);
-      s.classList.toggle('pointer-events-auto', i === index);
+    let current = 0;
+    const total = slides.length;
+    let isPaused = false;
+
+    function goTo(index) {
+      if (index === current) return;
+      slides.forEach((s, i) => {
+        s.classList.toggle('opacity-0', i !== index);
+        s.classList.toggle('opacity-100', i === index);
+        s.classList.toggle('pointer-events-none', i !== index);
+        s.classList.toggle('pointer-events-auto', i === index);
+      });
+      illustrations.forEach((s, i) => {
+        s.classList.toggle('opacity-0', i !== index);
+        s.classList.toggle('opacity-100', i === index);
+      });
+      dots.forEach((d, i) => {
+        d.classList.toggle('bg-accent-400', i === index);
+        d.classList.toggle('w-6', i === index);
+        d.classList.toggle('bg-white/30', i !== index);
+        d.classList.toggle('hover:bg-white/50', i !== index);
+      });
+      current = index;
+    }
+
+    function next() { goTo((current + 1) % total); }
+    function prev() { goTo((current - 1 + total) % total); }
+
+    function tick() {
+      if (!isPaused) next();
+    }
+
+    clearInterval(interval);
+    interval = setInterval(tick, 6000);
+
+    prevBtn?.addEventListener('click', () => { prev(); });
+    nextBtn?.addEventListener('click', () => { next(); });
+    dots.forEach((dot) => {
+      dot.addEventListener('click', () => {
+        goTo(Number(dot.dataset.index));
+      });
     });
-    illustrations.forEach((s, i) => {
-      s.classList.toggle('opacity-0', i !== index);
-      s.classList.toggle('opacity-100', i === index);
-    });
-    dots.forEach((d, i) => {
-      d.classList.toggle('bg-accent-400', i === index);
-      d.classList.toggle('w-6', i === index);
-      d.classList.toggle('bg-white/30', i !== index);
-      d.classList.toggle('hover:bg-white/50', i !== index);
-    });
-    current = index;
+
+    container.addEventListener('mouseenter', () => { isPaused = true; });
+    container.addEventListener('mouseleave', () => { isPaused = false; });
   }
 
-  function next() { goTo((current + 1) % total); }
-  function prev() { goTo((current - 1 + total) % total); }
+  document.addEventListener('astro:page-load', initCarousel);
 
-  function tick() {
-    if (!isPaused) next();
-  }
-  const interval = setInterval(tick, 5000);
-
-  prevBtn?.addEventListener('click', () => { prev(); });
-  nextBtn?.addEventListener('click', () => { next(); });
-  dots.forEach((dot) => {
-    dot.addEventListener('click', () => {
-      goTo(Number(dot.dataset.index));
-    });
+  document.addEventListener('astro:before-swap', () => {
+    clearInterval(interval);
   });
-
-  container.addEventListener('mouseenter', () => { isPaused = true; });
-  container.addEventListener('mouseleave', () => { isPaused = false; });
 </script>
