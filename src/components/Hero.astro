@@ -71,9 +71,9 @@ const slides = [
     {slides.map((slide, i) => (
       <div
         class="hero-slide absolute inset-0 flex items-center transition-opacity duration-700 ease-in-out"
-        class:list={{ 'opacity-0': i !== 0, 'opacity-100': i === 0 }}
+        class:list={{ 'opacity-0 pointer-events-none': i !== 0, 'opacity-100 pointer-events-auto': i === 0,}}
         data-index={i}
-      >
+        >
         <div class="w-full max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 lg:py-12">
           <div class="max-w-xl">
             <div class="flex items-center gap-2 mb-6">
@@ -149,13 +149,15 @@ const slides = [
 
   let current = 0;
   const total = slides.length;
-  let interval;
+  let isPaused = false; // <-- reemplaza a "let interval;"
 
   function goTo(index) {
     if (index === current) return;
     slides.forEach((s, i) => {
       s.classList.toggle('opacity-0', i !== index);
       s.classList.toggle('opacity-100', i === index);
+      s.classList.toggle('pointer-events-none', i !== index);
+      s.classList.toggle('pointer-events-auto', i === index);
     });
     illustrations.forEach((s, i) => {
       s.classList.toggle('opacity-0', i !== index);
@@ -173,22 +175,19 @@ const slides = [
   function next() { goTo((current + 1) % total); }
   function prev() { goTo((current - 1 + total) % total); }
 
-  function resetTimer() {
-    clearInterval(interval);
-    interval = setInterval(next, 6000);
+  function tick() {
+    if (!isPaused) next();
   }
+  const interval = setInterval(tick, 5000);
 
-  prevBtn?.addEventListener('click', () => { prev(); resetTimer(); });
-  nextBtn?.addEventListener('click', () => { next(); resetTimer(); });
+  prevBtn?.addEventListener('click', () => { prev(); });
+  nextBtn?.addEventListener('click', () => { next(); });
   dots.forEach((dot) => {
     dot.addEventListener('click', () => {
       goTo(Number(dot.dataset.index));
-      resetTimer();
     });
   });
 
-  container.addEventListener('mouseenter', () => clearInterval(interval));
-  container.addEventListener('mouseleave', () => { interval = setInterval(next, 6000); });
-
-  interval = setInterval(next, 6000);
+  container.addEventListener('mouseenter', () => { isPaused = true; });
+  container.addEventListener('mouseleave', () => { isPaused = false; });
 </script>

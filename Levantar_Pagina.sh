@@ -13,4 +13,4 @@ echo "▶ Recreando y levantando el contenedor..."
 # --no-deps evita que se reinicien las dependencias o redes asociadas
 docker compose up -d --no-deps astro-frontend
 
-echo "✅ Frontend construido y corriendo exitosamente."
+echo "Frontend construido y corriendo exitosamente."
