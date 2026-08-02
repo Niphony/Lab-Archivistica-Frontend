@@ -23,7 +23,7 @@ const navLinks = [
   <Image
     src={logoud}
     alt="Universidad Distrital Francisco José de Caldas"
-    class="h-20 w-auto object-contain"
+    class="h-20 lg:h-20 w-auto object-contain"
   />
 </div> 
 
@@ -74,7 +74,7 @@ const navLinks = [
       <!-- Mobile menu button -->
       <button
         id="menu-btn"
-        class="lg:hidden text-white/70 hover:text-white p-2"
+        class="lg:hidden ml-auto text-white/70 hover:text-white p-2"
         aria-label="Abrir menú"
       >
         <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -108,7 +108,17 @@ const navLinks = [
 </header>
 
 <script>
-  const btn = document.getElementById('menu-btn');
-  const menu = document.getElementById('mobile-menu');
-  btn?.addEventListener('click', () => menu?.classList.toggle('hidden'));
+  function initMenu() {
+    const btn = document.getElementById('menu-btn');
+    const menu = document.getElementById('mobile-menu');
+    if (!btn || !menu) return;
+
+    btn.addEventListener('click', () => {
+      const isOpen = !menu.classList.contains('hidden');
+      menu.classList.toggle('hidden');
+      btn.setAttribute('aria-expanded', String(!isOpen));
+    });
+  }
+
+  document.addEventListener('astro:page-load', initMenu);
 </script>
