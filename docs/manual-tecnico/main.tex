@@ -1,0 +1,786 @@
+\documentclass[12pt,a4paper]{report}
+
+\usepackage[utf8]{inputenc}
+\usepackage[T1]{fontenc}
+\usepackage[spanish,es-tabla]{babel}
+\usepackage{../lab-doc}
+
+
+\doctitulo{Manual Técnico del Portal del Laboratorio de Archivística y Humanidades Digitales}
+\docsubtitulo{Manual técnico}
+\docautores{Equipo del Laboratorio de Archivística\\ Universidad Distrital Francisco José de Caldas}
+\docciudad{Bogotá, Colombia}
+\docfecha{2026}
+
+\begin{document}
+
+\portadalab
+
+\tableofcontents
+\thispagestyle{chapternoline}
+
+\chapter{Introducción y alcance}
+
+El presente manual técnico documenta la arquitectura, el despliegue, la
+gestión de contenido, el mantenimiento y la resolución de problemas del
+\textbf{portal web del Laboratorio de Archivística y Humanidades Digitales} de
+la Universidad Distrital Francisco José de Caldas.
+
+El alcance de este documento se limita a los componentes que se encuentran
+versionados en el repositorio \texttt{Lab-Archivistica-Frontend}:
+
+\begin{itemize}
+  \item Frontend desarrollado con \textbf{Astro} (sitio estático generado).
+  \item Proxy \textbf{nginx} global que publica el portal en el puerto 80.
+  \item Stack \textbf{OrfeoNG} (gestión documental).
+  \item Stack \textbf{DSpace 10} (repositorio digital).
+  \item Servicio \textbf{Apache Tika} (extracción de metadatos).
+  \item Scripts de despliegue, operación y actualización de contenido.
+  \item Manuales de usuario y técnico (directorio \texttt{docs/}).
+\end{itemize}
+
+Las aplicaciones \textbf{Archivematica}, \textbf{AtoM} y \textbf{ExifTool} se
+despliegan fuera de este repositorio (en el servidor host) y se integran
+mediante el proxy. Este manual las menciona a nivel de integración, pero no
+documenta su instalación interna.
+
+\section{Público objetivo}
+
+Este manual está dirigido a:
+
+\begin{itemize}
+  \item \textbf{Administradores del portal}: responsables de desplegar,
+        actualizar y mantener el sitio.
+  \item \textbf{Gestores de contenido}: personas encargadas de publicar
+        noticias y mantener los catálogos de equipos, salas y software.
+  \item \textbf{Desarrolladores}: quienes modifican el código del frontend.
+\end{itemize}
+
+\section{Convenciones}
+
+\begin{itemize}
+  \item Los comandos de terminal aparecen en cajas de \textbf{Terminal}.
+  \item Los fragmentos de código o configuración aparecen en cajas de
+        \textbf{Código}.
+  \item Las advertencias y recomendaciones aparecen en cajas resaltadas.
+\end{itemize}
+
+\chapter{Visión general de la arquitectura}
+
+El portal sigue un modelo de \textbf{microservicios por contenedores}
+orquestado con Docker Compose. Un único proxy \texttt{nginx}
+(\texttt{lab-proxy}) actúa como puerta de entrada pública y distribuye el
+tráfico hacia cada aplicación según la ruta solicitada.
+
+\begin{center}
+\codeblock[Diagrama de arquitectura]{
+Usuario --> nginx (lab-proxy, puerto 80)\\
+  /               -> astro-frontend       (4321)\\
+  /orfeo/...       -> orfeo-nginx          (80)\\
+  /dspace/         -> dspace-frontend      (4000)\\
+  /dspace/server/  -> dspace-api           (8080)\\
+  /tika/api/       -> apache-tika          (9998)\\
+  /atom/           -> host.docker.internal:63001  (AtoM)\\
+  /archivematica/  -> host.docker.internal:63002\\
+  /exiftool/       -> host.docker.internal:63003\\
+}
+\end{center}
+
+\section{Contenedores del despliegue}
+
+\begin{center}
+\small
+\begin{tabular}{|l|l|l|}
+\hline
+\textbf{Contenedor} & \textbf{Imagen / Base} & \textbf{Puerto expuesto} \\
+\hline
+\texttt{lab-proxy} & nginx:1.25-alpine & 80 \\
+\texttt{astro-frontend} & node:22-alpine + serve & 127.0.0.1:4321 \\
+\texttt{orfeo-mysql} & mysql:5.7 & 127.0.0.1:3307 \\
+\texttt{orfeo-backend} & build local & interno \\
+\texttt{orfeo-frontend} & build local & interno \\
+\texttt{orfeo-sockets} & build local & interno \\
+\texttt{orfeo-nginx} & nginx:1.25-alpine & 127.0.0.1:64000 \\
+\texttt{dspace-db} & dspace-postgres-loadsql:10 & interno \\
+\texttt{dspace-solr} & dspace-solr:10 & interno \\
+\texttt{dspace-api} & dspace:dspace-10\_x & 127.0.0.1:8080 \\
+\texttt{dspace-frontend} & dspace-angular:10 & 127.0.0.1:4000 \\
+\texttt{apache-tika} & apache/tika:latest-full & 127.0.0.1:9998 \\
+\hline
+\end{tabular}
+\end{center}
+
+\begin{mdframed}[style=importantstyle]
+  \textbf{Nota:} los puertos 3307, 4321, 64000, 8080, 4000 y 9998 están
+  vinculados únicamente a \texttt{127.0.0.1}; el único puerto expuesto al
+  exterior es el \texttt{80} del proxy. Las aplicaciones Orfeo, DSpace y Tika
+  se publican vía \texttt{lab-proxy}.
+\end{mdframed}
+
+\section{Red y comunicación entre contenedores}
+
+Todos los contenedores del despliegue pertenecen a la red Docker
+\texttt{lab-network} y se comunican entre sí por su nombre de servicio.
+Las aplicaciones externas (AtoM, Archivematica, ExifTool) se alcanzan a
+través de \texttt{host.docker.internal}, que resuelve la IP del host.
+
+\begin{itemize}
+  \item \texttt{astro-frontend} sirve el sitio estático generado por Astro
+        (carpeta \texttt{dist}) usando \texttt{serve} en el puerto 4321.
+  \item \texttt{lab-proxy} recibe el tráfico del puerto 80 y lo reenvía según
+        la tabla de rutas del capítulo 6.
+  \item \texttt{orfeo-nginx} sirve como proxy interno del stack OrfeoNG
+        (backend PHP + frontend + sockets).
+  \item \texttt{dspace-api} ejecuta la migración de base de datos al arrancar
+        y expone la API REST de DSpace en el puerto 8080.
+  \item \texttt{dspace-frontend} sirve la interfaz Angular 19 de DSpace en el
+        puerto 4000.
+\end{itemize}
+
+\chapter{Stack tecnológico}
+
+\section{Frontend (Astro)}
+
+El portal es una aplicación \textbf{Astro} con componentes \textbf{React}:
+
+\begin{itemize}
+  \item Astro 7.1.6.
+  \item React 19.
+  \item Tailwind CSS v4 (paleta personalizada: \texttt{navy} y \texttt{accent}).
+  \item TypeScript en modo estricto.
+  \item \texttt{@tailwindcss/typography} para el contenido de las noticias.
+  \item \textbf{Content collections} con el cargador \texttt{glob} para leer
+        las noticias desde \texttt{public/news/}.
+  \item \textbf{Astro transitions} (\texttt{ClientRouter}) para las
+        transiciones entre páginas.
+\end{itemize}
+
+\subsection{Ejecución local del frontend}
+
+Instalación de dependencias:
+
+\singlecmd{npm install}
+
+En modo desarrollo (servidor con recarga en caliente):
+
+\singlecmd{npm run dev}
+
+Para generar el sitio estático y previsualizarlo:
+
+\multicmd{npm run build\\
+npm run preview}
+
+El sitio generado queda en \texttt{dist/} y es lo que sirve el contenedor
+\texttt{astro-frontend}.
+
+\section{Contenedor del frontend}
+
+El \texttt{Dockerfile} usa \texttt{node:22-alpine} para construir el sitio y
+sirve la carpeta \texttt{dist} con \texttt{serve} en el puerto 4321:
+
+\codeblock[Etapas del Dockerfile]{
+FROM node:22-alpine AS build\\
+\# ... npm ci + npm run build ...\\
+
+FROM node:22-alpine\\
+\# ... npm install -g serve ...\\
+CMD ["serve", "dist", "-l", "4321"]\\
+}
+
+\section{Stack OrfeoNG}
+
+El stack OrfeoNG está compuesto por:
+
+\begin{itemize}
+  \item \texttt{orfeo-mysql}: base de datos MySQL 5.7 (volumen
+        \texttt{orfeo\_mysql\_data}).
+  \item \texttt{orfeo-backend}: API PHP del sistema.
+  \item \texttt{orfeo-frontend}: interfaz de usuario.
+  \item \texttt{orfeo-sockets}: servidor de WebSockets para notificaciones.
+  \item \texttt{orfeo-nginx}: proxy interno del stack.
+\end{itemize}
+
+Los repositorios de OrfeoNG se clonan en tiempo de construcción desde GitHub
+(variables \texttt{BACKEND\_REPO}, \texttt{FRONTEND\_REPO},
+\texttt{SOCKETS\_REPO}).
+
+\section{Stack DSpace 10}
+
+\begin{itemize}
+  \item \texttt{dspace-db}: PostgreSQL con carga inicial (SQL de DSpace 10).
+  \item \texttt{dspace-solr}: índices Solr (búsqueda y descubrimiento).
+  \item \texttt{dspace-api}: API REST de DSpace (Java, puerto 8080).
+  \item \texttt{dspace-frontend}: interfaz Angular 19 (puerto 4000).
+\end{itemize}
+
+Los datos persistentes viven en los volúmenes \texttt{dspace\_pgdata},
+\texttt{dspace\_solr\_data} y \texttt{dspace\_assetstore}.
+
+\section{Apache Tika}
+
+El contenedor \texttt{apache-tika} usa la imagen \texttt{apache/tika:latest-full}
+y expone la API en el puerto 9998 (solo \texttt{127.0.0.1}). La interfaz web
+estática se sirve desde \texttt{tika-ui/} a través del proxy.
+
+\chapter{Estructura del repositorio}
+
+\begin{center}
+\small
+\begin{tabular}{|l|l|}
+\hline
+\textbf{Ruta} & \textbf{Contenido} \\
+\hline
+\texttt{src/pages/} & Páginas Astro (Inicio, Equipos, Software, Salas, Noticias, Investigación) \\
+\texttt{src/components/} & Componentes (Hero, Footer, SoftwareEquipment, etc.) \\
+\texttt{src/layouts/} & Layout principal (encabezado, pie y metadatos) \\
+\texttt{src/data/equipos.ts} & Datos centralizados de equipos \\
+\texttt{src/content/} & Script \texttt{actualizar\_pagina-noticias.sh} \\
+\texttt{src/content.config.ts} & Esquema de las content collections \\
+\texttt{public/news/} & Noticias en Markdown (content collection) \\
+\texttt{public/images/news/} & Imágenes de noticias \\
+\texttt{public/} & Archivos estáticos (logos, favicon, robots.txt, sitemap) \\
+\texttt{src/styles/global.css} & Estilos globales y paleta de colores \\
+\texttt{nginx/default.conf} & Configuración del proxy \\
+\texttt{docker-compose.yml} & Orquestación de todos los servicios \\
+\texttt{orfeo/} & Código y configuración de OrfeoNG \\
+\texttt{dspace/} & Configuración de DSpace (local.cfg, solr-init.sh) \\
+\texttt{tika-ui/} & Interfaz estática de Tika \\
+\texttt{Levantar\_Pagina.sh} & Rebuild del frontend \\
+\texttt{gestor-app-lab.sh} & Levantar/derribar los 3 stacks \\
+\texttt{docs/} & Manuales (usuario y técnico) en LaTeX \\
+\hline
+\end{tabular}
+\end{center}
+
+\section{Páginas del portal}
+
+\begin{center}
+\small
+\begin{tabular}{|l|l|}
+\hline
+\textbf{Ruta} & \textbf{Contenido} \\
+\hline
+\texttt{/} & Página de inicio (carrusel, servicios, noticias, software, proceso, contacto) \\
+\texttt{/equipos} & Catálogo de equipos con filtros \\
+\texttt{/equipos/<id>} & Ficha de detalle de un equipo \\
+\texttt{/software} & Catálogo de software con búsqueda y filtros \\
+\texttt{/servicios} & Vista general de servicios \\
+\texttt{/servicios/salas} & Listado de salas \\
+\texttt{/servicios/salas/<id>} & Ficha de detalle de una sala \\
+\texttt{/noticias} & Listado de noticias \\
+\texttt{/noticias/<slug>} & Página de detalle de una noticia \\
+\texttt{/investigacion} & Proyectos y líneas de investigación \\
+\texttt{/404} & Página de error 404 \\
+\hline
+\end{tabular}
+\end{center}
+
+\chapter{Despliegue local}
+
+\section{Requisitos}
+
+\begin{itemize}
+  \item Docker Engine 24+ y Docker Compose v2.
+  \item Node.js 22 (solo para desarrollo del frontend).
+  \item Git.
+  \item Conexión a internet para la descarga de imágenes y repositorios de
+        Orfeo (que se clonan en tiempo de construcción).
+\end{itemize}
+
+\section{Variables de entorno}
+
+La configuración sensible se define mediante variables de entorno (archivo
+\texttt{.env} en la raíz). Las principales son:
+
+\begin{itemize}
+  \item \texttt{MYSQL\_ROOT\_PASSWORD}, \texttt{DB\_NAME}, \texttt{DB\_USER},
+        \texttt{DB\_PASS}: credenciales de MySQL de Orfeo.
+  \item \texttt{AES\_KEY}: clave de cifrado compartida por Orfeo.
+  \item \texttt{SERVER\_URL}: URL pública de Orfeo (por defecto
+        \texttt{http://localhost:64000}).
+  \item \texttt{PORT}: puerto host de \texttt{orfeo-nginx} (por defecto 64000).
+  \item \texttt{BACKEND\_REPO}, \texttt{FRONTEND\_REPO},
+        \texttt{SOCKETS\_REPO}: repositorios GitHub de OrfeoNG.
+\end{itemize}
+
+\begin{mdframed}[style=importantstyle]
+  \textbf{Importante:} el archivo \texttt{.env} NO debe versionarse en el
+  repositorio público. Copie \texttt{.env.example} (si existe) y ajuste los
+  valores.
+\end{mdframed}
+
+\section{Levantar el portal completo}
+
+\singlecmd{docker compose up -d}
+
+Para construir las imágenes (primera vez o tras cambios en \texttt{Dockerfile}):
+
+\singlecmd{docker compose build}
+
+Para detener todos los servicios:
+
+\singlecmd{docker compose down}
+
+Para ver el estado de los contenedores:
+
+\singlecmd{docker compose ps}
+
+\section{Verificación del despliegue}
+
+\begin{enumerate}
+  \item Espere a que todos los contenedores estén en estado
+        \texttt{running/healthy}: \singlecmd{docker compose ps}
+  \item Verifique el portal principal:
+        \singlecmd{curl -I http://localhost}
+  \item Verifique las rutas de Orfeo, DSpace y Tika:
+        \multicmd{curl -I http://localhost/orfeo/\\
+        curl -I http://localhost/dspace/\\
+        curl -I http://localhost/tika/}
+  \item Revise los logs del proxy si alguna ruta falla:
+        \singlecmd{docker compose logs -f lab-proxy}
+\end{enumerate}
+
+\chapter{Configuración del proxy nginx}
+
+El archivo \texttt{nginx/default.conf} define las rutas del portal. A
+continuación se resume la distribución del tráfico:
+
+\begin{center}
+\small
+\begin{tabular}{|l|l|l|}
+\hline
+\textbf{Ruta} & \textbf{Destino} & \textbf{Observación} \\
+\hline
+\texttt{/} & astro-frontend:4321 & Portal principal \\
+\texttt{/orfeo/} & orfeo-nginx:80 & UI de Orfeo \\
+\texttt{/orfeo-ng/} & orfeo-nginx:80 & UI NG de Orfeo \\
+\texttt{/dspace/} & dspace-frontend:4000 & UI Angular de DSpace \\
+\texttt{/dspace/server/} & dspace:8080 & API REST de DSpace \\
+\texttt{/server/} & dspace:8080 & Compatibilidad con instalaciones previas \\
+\texttt{/ng\_backend/} & orfeo-nginx:80 & API de Orfeo \\
+\texttt{/socket/}, \texttt{/socket.io/} & orfeo-nginx:80 & WebSockets de Orfeo \\
+\texttt{/tika/} & tika-ui (estática) & Interfaz de Tika \\
+\texttt{/tika/api/} & apache-tika:9998 & API de Tika \\
+\texttt{/atom/} & host.docker.internal:63001 & AtoM (externo) \\
+\texttt{/archivematica/} & host.docker.internal:63002 & Archivematica (externo) \\
+\texttt{/exiftool/} & host.docker.internal:63003 & ExifTool (externo) \\
+\hline
+\end{tabular}
+\end{center}
+
+\begin{mdframed}[style=importantstyle]
+  \textbf{Importante:} los bloques \texttt{/atom/}, \texttt{/archivematica/} y
+  \texttt{/exiftool/} dependen de \texttt{host.docker.internal}, lo que exige
+  que las aplicaciones correspondientes estén corriendo en el servidor host.
+  Si alguna no está disponible, se generarán errores 502 en esas rutas.
+\end{mdframed}
+
+Para las rutas de Orfeo se usa un \texttt{resolver} de Docker
+(\texttt{127.0.0.11}) con nombres de upstream variables; esto permite recargar
+la configuración sin reiniciar el proxy cuando cambian las IPs de los
+contenedores.
+
+\section{Recargar la configuración del proxy}
+
+Después de modificar \texttt{nginx/default.conf}, se recarga la configuración
+sin detener el contenedor:
+
+\singlecmd{docker compose exec lab-proxy nginx -s reload}
+
+Para validar la sintaxis de la configuración antes de recargar:
+
+\singlecmd{docker compose exec lab-proxy nginx -t}
+
+\begin{mdframed}[style=importantstyle]
+  \textbf{Recomendación:} pruebe siempre con \texttt{nginx -t} antes de
+  recargar para evitar dejar el portal caído por un error de sintaxis.
+\end{mdframed}
+
+\chapter{Gestión de contenido}
+
+La página se alimenta de distintas fuentes dentro del repositorio. Este
+capítulo explica cómo agregar o modificar cada tipo de contenido: noticias,
+equipos, salas, software e investigación. Salvo el script de noticias, los
+cambios se aplican editando el código fuente y reconstruyendo el frontend con
+\texttt{Levantar\_Pagina.sh} (Capítulo 8) o, en desarrollo, con
+\texttt{npm run build}.
+
+\section{Noticias}
+
+Las noticias se escriben como archivos \textbf{Markdown} con portada
+(\texttt{frontmatter}) y se almacenan en \texttt{public/news/}. El esquema se
+define en \texttt{src/content.config.ts}:
+
+\codeblock[content.config.ts]{
+import \{ defineCollection, glob \} from 'astro:content';\\
+
+const news = defineCollection(\{\\
+  loader: glob(\{\\
+    pattern: '**/[\textasciicircum\_]*.md',\\
+    base: './public/news',\\
+  \}),\\
+  schema: z.object(\{\\
+    title: z.string(),\\
+    date: z.coerce.date(),\\
+    excerpt: z.string(),\\
+    author: z.string().default('GLUD'),\\
+    image: z.object(\{ src: z.string(), alt: z.string() \}).optional(),\\
+  \}),\\
+\});\\
+
+export const collections = \{ news \};\\
+}
+
+\subsection{Agregar una noticia}
+
+\begin{enumerate}
+  \item Crear un archivo \texttt{AAAA-MM-DD-slug.md} en \texttt{public/news/}.
+        El nombre del archivo define la fecha de publicación y la URL de la
+        noticia (\texttt{/noticias/AAAA-MM-DD-slug/}).
+  \item Definir el \texttt{frontmatter}: \texttt{title}, \texttt{date},
+        \texttt{excerpt}, \texttt{author} y, opcionalmente, \texttt{image}.
+  \item Escribir el cuerpo en Markdown (se renderiza con
+        \texttt{@tailwindcss/typography}).
+  \item Ejecutar el script de actualización para regenerar la página.
+\end{enumerate}
+
+Ejemplo real de una noticia publicada:
+
+\codeblock[public/news/2026-07-30-dspace10-disponible.md]{
+---\\
+title: "Nuevo DSpace 10 disponible y funcional"\\
+date: 2026-07-30\\
+excerpt: "El repositorio digital del laboratorio ha sido actualizado a DSpace 10."\\
+author: "Nicolas Acevedo"\\
+image: "/images/news/dspace.png"\\
+---\\
+}
+
+Las imágenes se ubican en \texttt{public/images/news/} y se referencian con la
+ruta absoluta \texttt{/images/news/<archivo>}.
+
+\begin{mdframed}[style=importantstyle]
+  \textbf{Nota:} la imagen es opcional. Si se omite, la tarjeta de la noticia
+  no muestra imagen. Se recomienda PNG o SVG con fondo transparente para una
+  mejor visualización.
+\end{mdframed}
+
+\subsection{Script de actualización}
+
+El script \texttt{src/content/actualizar\_pagina-noticias.sh} reconstruye la
+imagen \texttt{astro-frontend} y recrea el contenedor (sin reiniciar el resto
+de servicios):
+
+\singlecmd{bash src/content/actualizar\_pagina-noticias.sh}
+
+Con reconstrucción limpia (sin caché):
+
+\singlecmd{bash src/content/actualizar\_pagina-noticias.sh --no-cache}
+
+\subsection{Orden de las noticias}
+
+Las noticias se ordenan de forma descendente por su campo \texttt{date}. La
+página de inicio muestra las 4 más recientes y el carrusel las 3 más
+recientes. El listado completo (\texttt{/noticias}) las muestra todas.
+
+\section{Equipos}
+
+Los equipos se definen de forma centralizada en \texttt{src/data/equipos.ts}.
+Este archivo alimenta la sección de la portada, el listado en
+\texttt{/equipos} y la ficha de detalle en \texttt{/equipos/<id>}:
+
+\codeblock[src/data/equipos.ts]{
+export interface Equipo \{\\
+  id: number;\\
+  name: string;\\
+  description: string;\\
+  available: boolean;\\
+  category: string;\\
+\}\\
+
+export const equipos: Equipo[] = [\\
+  \{\\
+    id: 1,\\
+    name: 'Computadores',\\
+    description: 'Equipo de cómputo de alta gama para procesamiento de datos y digitalización documental.',\\
+    available: true,\\
+    category: 'Cómputo',\\
+  \},\\
+];\\
+}
+
+\subsection{Agregar o modificar un equipo}
+
+\begin{enumerate}
+  \item Abra \texttt{src/data/equipos.ts}.
+  \item Para agregar: añada un nuevo objeto al arreglo con un \texttt{id}
+        consecutivo (los ids no deben repetirse, ya que definen la URL
+        \texttt{/equipos/<id>}).
+  \item Para modificar: edite los campos del objeto correspondiente.
+  \item Para cambiar la disponibilidad: ajuste \texttt{available} a
+        \texttt{true} o \texttt{false}.
+  \item Reconstruya el frontend para publicar los cambios.
+\end{enumerate}
+
+\begin{mdframed}[style=importantstyle]
+  \textbf{Nota:} a diferencia de las noticias, los cambios en equipos, salas y
+  software requieren reconstruir el frontend para verse publicados.
+\end{mdframed}
+
+\section{Salas}
+
+Las salas están definidas en el arreglo \texttt{salas} de
+\texttt{src/pages/servicios/salas/[id].astro}:
+
+\codeblock[{src/pages/servicios/salas/[id].astro}]{
+const salas = [\\
+  \{ id: 1, name: 'Sala de Digitalización', capacity: 6, available: true, description: '...' \},\\
+  \{ id: 2, name: 'Sala de Trabajo Colaborativo', capacity: 12, available: true, description: '...' \},\\
+  \{ id: 3, name: 'Cubículo de Estudio', capacity: 2, available: false, description: '...' \},\\
+];\\
+}
+
+Cada sala define \texttt{id}, \texttt{name}, \texttt{capacity},
+\texttt{available} y \texttt{description}. Al agregar o eliminar salas debe
+actualizarse también \texttt{getStaticPaths()} con los \texttt{id}
+disponibles:
+
+\codeblock[getStaticPaths]{
+export async function getStaticPaths() \{\\
+  return [\\
+    \{ params: \{ id: '1' \} \},\\
+    \{ params: \{ id: '2' \} \},\\
+    \{ params: \{ id: '3' \} \},\\
+  ];\\
+\}\\
+}
+
+\section{Software}
+
+\subsection{Catálogo de software (\texttt{/software})}
+
+El catálogo completo se define en el arreglo \texttt{softwares} de
+\texttt{src/pages/software/index.astro}. Cada entrada define:
+
+\begin{itemize}
+  \item \texttt{id}: identificador numérico.
+  \item \texttt{name}: nombre de la herramienta.
+  \item \texttt{version}: versión mostrada.
+  \item \texttt{category}: categoría (Repositorio Digital, Preservación
+        Digital, Descripción Archivística, Gestión Documental, Extracción de
+        Metadatos, Metadatos).
+  \item \texttt{licenseType}: tipo de licencia.
+  \item \texttt{description}: descripción breve.
+  \item \texttt{url}: URL de acceso (opcional; si se omite, la tarjeta no
+        muestra botón Acceder).
+\end{itemize}
+
+\subsection{Listado de software de la portada}
+
+El listado de la portada se define en \texttt{src/components/SoftwareEquipment.astro}
+en el arreglo \texttt{softwareList}. Cada entrada define \texttt{name},
+\texttt{href} y \texttt{logo} (un SVG embebido):
+
+\codeblock[src/components/SoftwareEquipment.astro]{
+const softwareList = [\\
+  \{ name: 'DSpace', href: '/dspace/', logo: '<svg ...>' \},\\
+  \{ name: 'Archivematica', href: 'http://labhumanidades.udistrital.edu.co:62080', logo: '<svg ...>' \},\\
+];\\
+}
+
+El \texttt{href} puede ser una ruta interna servida por el proxy nginx
+(Capítulo 6) o una URL externa. El \texttt{logo} es un SVG embebido que se
+renderiza con \texttt{set:html}.
+
+\section{Investigación}
+
+Los proyectos de investigación se definen en el arreglo embebido de
+\texttt{src/pages/investigacion/index.astro}. Cada tarjeta define:
+
+\begin{itemize}
+  \item \texttt{title}: título del proyecto.
+  \item \texttt{desc}: descripción breve.
+  \item \texttt{tag}: etiqueta de estado (En curso, Investigación, Publicado).
+  \item \texttt{color}: color de la etiqueta (green, blue, accent).
+\end{itemize}
+
+Para agregar un proyecto, añada un objeto al arreglo y reconstruya el frontend.
+
+\section{Servicios de la portada}
+
+Las tarjetas de servicios de la portada se definen en
+\texttt{src/components/Services.astro} (Software especializado, Laboratorios
+Virtuales, Préstamo de equipos, Préstamos de sala). Cada tarjeta define
+\texttt{title}, \texttt{description}, \texttt{icon} (SVG) y \texttt{href}.
+
+\section{Flujo de publicación de cambios}
+
+\begin{enumerate}
+  \item Edite el archivo correspondiente (Markdown de noticia, \texttt{equipos.ts},
+        componente de salas/software/investigación).
+  \item Pruebe en desarrollo: \singlecmd{npm run dev}
+  \item Genere el sitio: \singlecmd{npm run build}
+  \item Verifique en \texttt{dist/} que las páginas nuevas se generaron.
+  \item En el servidor, actualice el repositorio con \texttt{git pull} y
+        reconstruya el frontend.
+\end{enumerate}
+
+\chapter{Mantenimiento y operación}
+
+\section{Levantar el frontend}
+
+El script \texttt{Levantar\_Pagina.sh} reconstruye únicamente el contenedor
+\texttt{astro-frontend} tras cambios en el frontend:
+
+\singlecmd{bash Levantar\_Pagina.sh}
+
+Para forzar una construcción limpia:
+
+\singlecmd{bash Levantar\_Pagina.sh --no-cache}
+
+\section{Gestor de los tres stacks}
+
+El script \texttt{gestor-app-lab.sh} opera sobre los tres directorios del
+servidor (\texttt{Lab-Archivistica-Frontend}, \texttt{archivematica/hack} y
+\texttt{atom}):
+
+\multicmd{bash gestor-app-lab.sh up\\
+bash gestor-app-lab.sh down}
+
+\section{Registros (logs)}
+
+\codeblock[Registros por contenedor]{
+docker compose logs -f astro-frontend\\
+docker compose logs -f orfeo-backend\\
+docker compose logs -f dspace\\
+docker compose logs -f apache-tika\\
+docker compose logs -f lab-proxy\\
+}
+
+Para ver los últimos N registros sin seguir:
+
+\singlecmd{docker compose logs --tail 100 astro-frontend}
+
+\section{Respaldos}
+
+Los datos persistentes viven en volúmenes Docker:
+
+\begin{itemize}
+  \item \texttt{orfeo\_mysql\_data}: base de datos de Orfeo.
+  \item \texttt{dspace\_pgdata}: base de datos de DSpace.
+  \item \texttt{dspace\_solr\_data}: índices de Solr.
+  \item \texttt{dspace\_assetstore}: objetos del repositorio.
+\end{itemize}
+
+\begin{mdframed}[style=importantstyle]
+  \textbf{Recomendación:} realice respaldos periódicos de estos volúmenes
+  (p.~ej. con \texttt{docker run --rm -v <volumen>:/data -v \$(pwd):/backup
+  busybox cp -r /data /backup}) y guárdelos fuera del servidor.
+\end{mdframed}
+
+\subsection{Ejemplo de respaldo de un volumen}
+
+\codeblock[Respaldo del volumen de Orfeo]{
+docker run --rm -v orfeo\_mysql\_data:/data \\
+  -v /ruta/respaldo:/backup busybox \\
+  cp -r /data /backup/orfeo-mysql\\
+}
+
+\subsection{Actualización de imágenes base}
+
+Para actualizar las imágenes base (nginx, node, DSpace, Tika):
+
+\begin{enumerate}
+  \item Haga un respaldo de los volúmenes de datos.
+  \item Actualice las versiones en \texttt{docker-compose.yml}.
+  \item Reconstruya: \singlecmd{docker compose build}
+  \item Reinicie: \singlecmd{docker compose up -d}
+  \item Verifique el estado y los datos después del reinicio.
+\end{enumerate}
+
+\section{Actualizar el código del repositorio}
+
+\begin{enumerate}
+  \item En el servidor, dentro de \texttt{Lab-Archivistica-Frontend}:
+        \singlecmd{git pull}
+  \item Si hubo cambios en \texttt{public/news/}: ejecute
+        \singlecmd{bash src/content/actualizar\_pagina-noticias.sh}
+  \item Si hubo cambios en el código del frontend (componentes, datos,
+        estilos): \singlecmd{bash Levantar\_Pagina.sh}
+  \item Si hubo cambios en \texttt{docker-compose.yml} o en el
+        \texttt{Dockerfile}: \singlecmd{docker compose up -d --build}
+  \item Si hubo cambios en \texttt{nginx/default.conf}: valide y recargue el
+        proxy.
+\end{enumerate}
+
+\section{Monitoreo básico}
+
+\begin{itemize}
+  \item Estado de los contenedores: \singlecmd{docker compose ps}
+  \item Uso de recursos: \singlecmd{docker stats}
+  \item Espacio en disco: \singlecmd{df -h}
+  \item Verificación de respuesta del portal: \singlecmd{curl -I http://localhost}
+\end{itemize}
+
+\chapter{Resolución de problemas}
+
+\begin{itemize}
+  \item \textbf{El puerto 80 está ocupado.} Detenga el servicio que lo usa o
+        cambie el mapeo en \texttt{docker-compose.yml}.
+  \item \textbf{Error 502 en \texttt{/atom/}, \texttt{/archivematica/} o
+        \texttt{/exiftool/}.} Verifique que la aplicación externa esté
+        corriendo en el host y que \texttt{host.docker.internal} resuelva.
+  \item \textbf{Orfeo no responde.} Confirme que \texttt{orfeo-mysql} esté
+        sano (\texttt{docker compose ps}) y revise los logs del backend.
+  \item \textbf{DSpace tarda en iniciar.} La API ejecuta una migración de base
+        de datos al arrancar; espere a que el healthcheck del contenedor pase.
+  \item \textbf{Noticias desactualizadas.} Ejecute
+        \texttt{actualizar\_pagina-noticias.sh} para reconstruir el frontend.
+  \item \textbf{Los contenedores no resuelven entre sí.} Asegúrese de que todos
+        pertenecen a la red \texttt{lab-network}.
+  \item \textbf{El sitio muestra una versión antigua tras un cambio.}
+        Reconstruya la imagen sin caché
+        (\texttt{Levantar\_Pagina.sh --no-cache}) y reinicie el contenedor.
+  \item \textbf{Una imagen de noticia no aparece.} Verifique que el archivo
+        exista en \texttt{public/images/news/} y que la ruta en el
+        \texttt{frontmatter} comience con \texttt{/images/news/}.
+  \item \textbf{La página de un equipo devuelve 404.} El \texttt{id} en
+        \texttt{getStaticPaths()} (o en el arreglo \texttt{equipos}) no
+        coincide con la URL solicitada; reconstruya el sitio.
+  \item \textbf{El proxy recibe 502 en todas las rutas.} Verifique que
+        \texttt{lab-proxy} y los servicios de destino estén en la misma red y
+        en ejecución.
+\end{itemize}
+
+\chapter{Seguridad y buenas prácticas}
+
+\begin{itemize}
+  \item No exponga los puertos internos (3307, 8080, 4000, 9998, 64000) a la
+        red pública; mantenga el mapeo a \texttt{127.0.0.1}.
+  \item Proteja las credenciales en el archivo \texttt{.env}; no lo versiones
+        en el repositorio público.
+  \item Actualice periódicamente las imágenes base (\texttt{nginx:1.25-alpine},
+        \texttt{node:22-alpine}, DSpace, Tika) para corregir vulnerabilidades.
+  \item Active HTTPS (certificado del servidor) para cifrar el tráfico del
+        portal en producción.
+  \item Haga respaldos automáticos de los volúmenes de datos y pruebe su
+        restauración.
+  \item Restrinja el acceso a los formularios de reserva y las cuentas de
+        administrador de cada herramienta (DSpace, Orfeo, Archivematica, AtoM).
+  \item Documente en este manual cualquier cambio de arquitectura relevante.
+\end{itemize}
+
+\section{Buenas prácticas de gestión de contenido}
+
+\begin{itemize}
+  \item Verifique siempre la ortografía y el formato en \texttt{npm run dev}
+        antes de publicar una noticia.
+  \item Use nombres de archivo \texttt{AAAA-MM-DD-slug.md} coherentes para
+        las noticias.
+  \item Mantenga los \texttt{id} de equipos y salas estables (no reutilice
+        ids eliminados en el corto plazo para evitar enlaces rotos).
+  \item Comprima y optimice las imágenes de noticias (PNG/SVG recomendado).
+  \item Después de cada publicación, verifique el sitio en producción.
+\end{itemize}
+
+\end{document}
