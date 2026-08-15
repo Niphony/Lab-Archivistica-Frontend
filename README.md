@@ -10,7 +10,7 @@
 
 </div>
 
-Interfaz web del Laboratorio de Archivística y Tecnologías Digitales de la **Universidad Distrital Francisco José de Caldas**. Espacio académico para la gestión, análisis y transformación de la información con tecnología, innovación y compromiso social.
+Interfaz web del Laboratorio de Archivística y Humanidades Digitales de la **Universidad Distrital Francisco José de Caldas**. Espacio académico para la gestión, análisis y transformación de la información con tecnología, innovación y compromiso social.
 
 <br />
 
@@ -40,10 +40,7 @@ src/
 │   ├── ContactSection.astro # Formulario y contacto
 │   ├── Header.astro         # Navegación principal
 │   └── Footer.astro         # Pie de página
-├── content/
-│   └── news/                # Noticias en Markdown (content collections)
-│       ├── config.ts        # Schema de validación con Zod
-│       └── *.md             # Cada archivo = una noticia
+├── content.config.ts       # Schema de validación de noticias (Zod)
 ├── layouts/
 │   └── Layout.astro         # Layout base (head, header, footer)
 ├── pages/                   # Rutas del sitio
@@ -57,6 +54,10 @@ src/
 │   └── software/            # Catálogo de software
 └── styles/
     └── global.css           # Estilos globales + Tailwind
+
+public/
+└── news/                    # Noticias en Markdown (content collections)
+    └── *.md                 # Cada archivo = una noticia
 ```
 
 ## Páginas
@@ -92,7 +93,7 @@ Las noticias se gestionan mediante **Content Collections** de Astro, usando arch
 
 ### 1. Crear un archivo
 
-Dentro de `src/content/news/`, crea un archivo con el formato `YYYY-MM-DD-titulo-corto.md`:
+Dentro de `public/news/`, crea un archivo con el formato `YYYY-MM-DD-titulo-corto.md`:
 
 ```markdown
 ---
@@ -118,12 +119,12 @@ Aquí va el contenido completo de la noticia en Markdown. Puedes usar **negritas
 | `date` | date | Si | Fecha de publicación (formato ISO: `YYYY-MM-DD`) |
 | `excerpt` | string | Si | Resumen corto para tarjetas y previews |
 | `author` | string | No | Nombre del autor o redactor |
-| `image` | string | No | Ruta a imagen destacada (pendiente de implementar en UI) |
+| `image` | string | No | Ruta a imagen destacada (p. ej. `/images/news/noticia.png`). Se muestra en tarjetas, carrusel y vista individual |
 
 ### 3. Publicar
 
 ```bash
-git add src/content/news/
+git add public/news/
 git commit -m "Feat(News): nueva noticia sobre..."
 git push
 ```
