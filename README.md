@@ -146,5 +146,5 @@ La página se reconstruye automáticamente y la noticia aparece en:
 
 ---
 <div align="center">
-  <sub>Hecho con ❤️ por el <a href="https://github.com/Hexoneira">Hexoneira</a> y el equipo del <a href="https://github.com/Niphony/Lab-Archivistica-Frontend">Laboratorio de Archivística</a></sub>
+  <sub>Hecho por el <a href="https://github.com/Hexoneira">Hexoneira</a> y el equipo del <a href="https://github.com/Niphony/Lab-Archivistica-Frontend">Laboratorio de Archivística</a></sub>
 </div>

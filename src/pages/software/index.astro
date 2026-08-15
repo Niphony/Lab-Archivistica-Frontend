@@ -1,10 +1,6 @@
 ---
 import Layout from '../../layouts/Layout.astro';
 
-const BASE_URL = import.meta.env.PROD
-  ? 'http://labhumanidades.udistrital.edu.co'
-  : 'http://localhost';
-
 const softwares = [
   { id: 1, name: 'DSpace', version: '8.x', category: 'Repositorio Digital', licenseType: 'Open Source', description: 'Plataforma de código abierto para la creación de repositorios digitales institucionales. Permite la gestión, preservación y difusión de la producción académica y científica.', url: '/dspace/' },
   { id: 2, name: 'Archivematica', version: '1.x', category: 'Preservación Digital', licenseType: 'Open Source', description: 'Sistema de preservación digital automatizado que implementa flujos de trabajo basados en estándares internacionales (OAIS, PREMIS, METS).', url: 'http://labhumanidades.udistrital.edu.co:62080' },

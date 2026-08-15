@@ -8,7 +8,7 @@ const featuredNews = allNews.slice(0, 3);
 const slides = [
   {
     eyebrow: 'Universidad Distrital Francisco José de Caldas',
-    title: 'Laboratorio de Archivística y Tecnologías Digitales',
+    title: 'Laboratorio de Archivística y Humanidades Digitales',
     subtitle: 'Gestión, análisis y transformación de la información con tecnología, innovación y compromiso social.',
     image: null,
     cta: [
@@ -111,12 +111,12 @@ const slides = [
   </div>
 
   <!-- Arrows -->
-  <button id="carousel-prev" class="hidden lg:flex absolute left-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 flex items-center justify-center rounded-full border border-white/20 bg-navy-900/60 backdrop-blur-sm text-white/70 hover:text-white hover:bg-navy-900/90 transition-all duration-200 cursor-pointer">
+  <button id="carousel-prev" aria-label="Diapositiva anterior" class="hidden lg:flex absolute left-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 flex items-center justify-center rounded-full border border-white/20 bg-navy-900/60 backdrop-blur-sm text-white/70 hover:text-white hover:bg-navy-900/90 transition-all duration-200 cursor-pointer">
     <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
       <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/>
     </svg>
   </button>
-  <button id="carousel-next" class="hidden lg:flex absolute right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 flex items-center justify-center rounded-full border border-white/20 bg-navy-900/60 backdrop-blur-sm text-white/70 hover:text-white hover:bg-navy-900/90 transition-all duration-200 cursor-pointer">
+  <button id="carousel-next" aria-label="Siguiente diapositiva" class="hidden lg:flex absolute right-4 top-1/2 -translate-y-1/2 z-20 w-10 h-10 flex items-center justify-center rounded-full border border-white/20 bg-navy-900/60 backdrop-blur-sm text-white/70 hover:text-white hover:bg-navy-900/90 transition-all duration-200 cursor-pointer">
     <svg class="w-5 h-5" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
       <path stroke-linecap="round" stroke-linejoin="round" d="M8.25 4.5l7.5 7.5-7.5 7.5"/>
     </svg>
@@ -131,6 +131,8 @@ const slides = [
           'bg-accent-400 w-6': i === 0,
           'bg-white/30 hover:bg-white/50': i !== 0,
         }}
+        aria-label={`Ir a la diapositiva ${i + 1}`}
+        aria-current={i === 0 ? 'true' : 'false'}
         data-index={i}
       ></button>
     ))}
@@ -171,6 +173,7 @@ const slides = [
         d.classList.toggle('w-6', i === index);
         d.classList.toggle('bg-white/30', i !== index);
         d.classList.toggle('hover:bg-white/50', i !== index);
+        d.setAttribute('aria-current', i === index ? 'true' : 'false');
       });
       current = index;
     }

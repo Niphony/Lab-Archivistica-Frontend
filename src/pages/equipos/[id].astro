@@ -1,21 +1,9 @@
 ---
 import Layout from '../../layouts/Layout.astro';
+import { equipos } from '../../data/equipos';
 
-const equipos = [
-  { id: 1, name: 'Computadores', description: 'Equipo de cómputo de alta gama para procesamiento de datos y digitalización documental.', available: true, category: 'Cómputo' },
-  { id: 2, name: 'Escáneres', description: 'Escáner de alta resolución para digitalización de documentos históricos en gran formato.', available: true, category: 'Digitalización' },
-  { id: 3, name: 'Coleccion Bibliogragica', description: 'Colección de documentos para libre consulta, préstamo otorgado por la universidad.', available: true, category: 'Digitalización' },
-  ];
-
-export async function getStaticPaths() {
-  return [
-    { params: { id: '1' } },
-    { params: { id: '2' } },
-    { params: { id: '3' } },
-    { params: { id: '4' } },
-    { params: { id: '5' } },
-    { params: { id: '6' } },
-  ];
+export function getStaticPaths() {
+  return equipos.map((e) => ({ params: { id: String(e.id) } }));
 }
 
 const { id } = Astro.params;
@@ -32,19 +20,19 @@ const equipo = equipos.find((e) => e.id === Number(id)) ?? null;
 
     {equipo && (
       <div class="grid grid-cols-1 lg:grid-cols-2 gap-10">
-        <div>
-          <div class="bg-navy-800 rounded-2xl h-64 flex items-center justify-center border border-white/10 mb-6">
+        <div class="bg-navy-800 rounded-2xl p-6 border border-white/10">
+          <div class="bg-navy-700/50 rounded-2xl h-64 flex items-center justify-center border border-white/10 mb-6">
             <svg class="w-24 h-24 text-white/20" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path stroke-linecap="round" stroke-linejoin="round" stroke-width="1" d="M9 17.25v1.007a3 3 0 01-.879 2.122L7.5 21h9l-.621-.621A3 3 0 0115 18.257V17.25m6-12V15a2.25 2.25 0 01-2.25 2.25H5.25A2.25 2.25 0 013 15V5.25A2.25 2.25 0 015.25 3h13.5A2.25 2.25 0 0121 5.25z"/>
             </svg>
           </div>
-          <h1 class="text-3xl font-display font-bold text-shadow-blue-400 mb-2">{equipo.name}</h1>
+          <h1 class="text-3xl font-display font-bold text-white mb-2">{equipo.name}</h1>
           <span class={`text-sm px-3 py-1 rounded-full font-semibold inline-block mb-4 ${equipo.available ? 'bg-green-500/15 text-green-400' : 'bg-red-500/15 text-red-400'}`}>
             {equipo.available ? 'Disponible' : 'No disponible'}
           </span>
-          <p class="text-shadow-blue-400/60 leading-relaxed">{equipo.description}</p>
-          <div class="mt-4 border-t border-black/10 pt-4">
-            <p class="text-sm text-shadow-blue-400/40">Categoría: <span class="text-shadow-blue-400/70">{equipo.category}</span></p>
+          <p class="text-white/60 leading-relaxed">{equipo.description}</p>
+          <div class="mt-4 border-t border-white/10 pt-4">
+            <p class="text-sm text-white/40">Categoría: <span class="text-white/70">{equipo.category}</span></p>
           </div>
         </div>
 
