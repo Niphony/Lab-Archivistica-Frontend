@@ -141,7 +141,7 @@ La página se reconstruye automáticamente y la noticia aparece en:
 - No hay límite de noticias. El tablón las muestra todas.
 - Para editar, solo modifica el archivo `.md` correspondiente.
 - Para eliminar, borra el archivo o mueve la fecha al pasado.
-
+- Para algun cambio correspondiente a url cambiar tanto el docker-compose.yml, como en las variables de Orfeo, Dspace, y en el nginx.
 <br />
 
 ---
