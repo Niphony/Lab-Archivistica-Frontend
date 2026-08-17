@@ -1,0 +1,57 @@
+---
+import { getCollection, render } from 'astro:content';
+import Layout from '../../layouts/Layout.astro';
+
+export async function getStaticPaths() {
+  const news = await getCollection('news');
+  return news.map((n) => ({
+    params: { slug: n.id },
+    props: { entry: n },
+  }));
+}
+
+const { entry } = Astro.props;
+const { Content } = await render(entry);
+
+const d = entry.data.date;
+const meses = ['enero','febrero','marzo','abril','mayo','junio','julio','agosto','septiembre','octubre','noviembre','diciembre'];
+const formattedDate = `${d.getUTCDate()} de ${meses[d.getUTCMonth()]} de ${d.getUTCFullYear()}`;
+---
+
+<Layout title={`${entry.data.title} — Noticias`}>
+  <article class="bg-navy-900 min-h-screen">
+    <div class="max-w-3xl mx-auto px-4 sm:px-6 lg:px-8 py-16 lg:py-20">
+      <a
+        href="/noticias/"
+        class="inline-flex items-center gap-1.5 text-white/40 hover:text-accent-400 text-sm font-semibold transition-colors mb-8"
+      >
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2.5" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" d="M15.75 19.5L8.25 12l7.5-7.5"/>
+        </svg>
+        Volver a noticias
+      </a>
+
+      {entry.data.image && (
+        <img src={entry.data.image} alt="" class="w-full h-48 sm:h-64 object-contain mb-8 rounded-xl bg-navy-800/50 p-4" />
+      )}
+
+      <div class="flex items-center gap-2 text-xs text-white/40 mb-4">
+        <time datetime={entry.data.date.toISOString()}>{formattedDate}</time>
+        {entry.data.author && (
+          <>
+            <span class="w-1 h-1 rounded-full bg-white/20"></span>
+            <span>{entry.data.author}</span>
+          </>
+        )}
+      </div>
+
+      <h1 class="font-display font-bold text-white text-3xl sm:text-4xl lg:text-5xl leading-tight mb-8">
+        {entry.data.title}
+      </h1>
+
+      <div class="prose prose-invert prose-sky max-w-none text-white/80 prose-headings:text-white prose-strong:text-white prose-a:text-accent-400">
+        <Content />
+      </div>
+    </div>
+  </article>
+</Layout>

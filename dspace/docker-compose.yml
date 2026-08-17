@@ -1,0 +1,83 @@
+# DSpace 10.x - Repositorio Digital
+# Stack: Java + Angular + PostgreSQL + Solr
+# Imagenes oficiales: https://hub.docker.com/r/dspace/dspace
+
+services:
+
+  dspacedb:
+    image: ghcr.io/dspace/dspace-postgres-loadsql:dspace-10_x
+    container_name: dspace-db
+    restart: unless-stopped
+    environment:
+      PGDATA: /pgdata
+      POSTGRES_DB: dspace
+      POSTGRES_USER: dspace
+      POSTGRES_PASSWORD: dspace
+    volumes:
+      - pgdata:/pgdata
+    healthcheck:
+      test: ["CMD", "pg_isready", "-U", "dspace"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - dspace-network
+
+  dspacesolr:
+    image: dspace/dspace-solr:dspace-10_x
+    container_name: dspace-solr
+    restart: unless-stopped
+    environment:
+      SOLR_OPTS: "-Dsolr.config.lib.enabled=true"
+    command: ["/bin/bash", "/opt/solr/dspace-init.sh"]
+    volumes:
+      - solr_data:/var/solr/data
+      - ./solr-init.sh:/opt/solr/dspace-init.sh:ro
+    networks:
+      - dspace-network
+
+  dspace:
+    image: dspace/dspace:dspace-10_x
+    container_name: dspace-api
+    restart: unless-stopped
+    entrypoint: ["/bin/bash", "-c"]
+    depends_on:
+      dspacedb:
+        condition: service_healthy
+    ports:
+      - "127.0.0.1:8080:8080"
+    volumes:
+      - assetstore:/dspace/assetstore
+      - ./local.cfg:/dspace/config/local.cfg:ro
+    command: ["/dspace/bin/dspace database migrate && exec java -jar /dspace/webapps/server-boot.jar"]
+    networks:
+      - dspace-network
+
+  dspace-angular:
+    image: ghcr.io/dspace/dspace-angular:dspace-10_x-dist
+    container_name: dspace-frontend
+    restart: unless-stopped
+    depends_on:
+      - dspace
+    environment:
+      DSPACE_UI_SSL: "false"
+      DSPACE_UI_HOST: 0.0.0.0
+      DSPACE_UI_PORT: 4000
+      DSPACE_UI_NAMESPACE: /dspace/
+      DSPACE_REST_SSL: "false"
+      DSPACE_REST_HOST: localhost
+      DSPACE_REST_PORT: 80
+      DSPACE_REST_NAMESPACE: /dspace/server
+    ports:
+      - "127.0.0.1:4000:4000"
+    networks:
+      - dspace-network
+
+networks:
+  dspace-network:
+    driver: bridge
+
+volumes:
+  pgdata:
+  solr_data:
+  assetstore:

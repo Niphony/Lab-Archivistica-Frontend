@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Apache Tika - Extracción de Metadatos</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { font-family: system-ui, -apple-system, sans-serif; background: #0f172a; color: #e2e8f0; min-height: 100vh; display: flex; flex-direction: column; align-items: center; }
+.container { max-width: 800px; width: 100%; padding: 2rem 1rem; }
+h1 { font-size: 1.5rem; font-weight: 600; color: #f1f5f9; margin-bottom: 0.25rem; }
+p.sub { color: #64748b; font-size: 0.875rem; margin-bottom: 2rem; }
+.dropzone { border: 2px dashed #334155; border-radius: 1rem; padding: 3rem 2rem; text-align: center; cursor: pointer; transition: all 0.2s; background: #1e293b; position: relative; }
+.dropzone:hover, .dropzone.dragover { border-color: #38bdf8; background: #1e293b; }
+.dropzone.dragover { border-color: #0ea5e9; background: #0f172a; }
+.dropzone-icon { width: 48px; height: 48px; margin: 0 auto 1rem; color: #38bdf8; }
+.dropzone p { color: #94a3b8; font-size: 0.9rem; }
+.dropzone .browse { color: #38bdf8; text-decoration: underline; cursor: pointer; }
+.dropzone input[type=file] { display: none; }
+.status { display: none; margin-top: 1.5rem; padding: 1rem; border-radius: 0.75rem; background: #1e293b; border: 1px solid #334155; }
+.status.active { display: block; }
+.status .filename { font-weight: 600; color: #f1f5f9; margin-bottom: 0.25rem; word-break: break-all; }
+.status .progress { margin-top: 0.75rem; height: 4px; background: #334155; border-radius: 2px; overflow: hidden; }
+.status .progress-bar { height: 100%; width: 0; background: linear-gradient(90deg, #38bdf8, #0ea5e9); border-radius: 2px; transition: width 0.3s; }
+.output { display: none; margin-top: 1.5rem; }
+.output.active { display: block; }
+.output h2 { font-size: 1rem; font-weight: 600; color: #f1f5f9; margin-bottom: 0.75rem; }
+.output pre { background: #1e293b; border: 1px solid #334155; border-radius: 0.75rem; padding: 1.25rem; overflow-x: auto; font-size: 0.8125rem; line-height: 1.6; color: #cbd5e1; max-height: 500px; overflow-y: auto; white-space: pre-wrap; word-break: break-word; }
+.output .tabs { display: flex; gap: 0.5rem; margin-bottom: 0.75rem; }
+.output .tab { background: #1e293b; border: 1px solid #334155; color: #64748b; padding: 0.5rem 1rem; border-radius: 0.5rem; cursor: pointer; font-size: 0.8125rem; transition: all 0.2s; }
+.output .tab.active { background: #0ea5e9; border-color: #0ea5e9; color: #fff; }
+.error-msg { display: none; margin-top: 1rem; padding: 0.75rem 1rem; background: #450a0a; border: 1px solid #dc2626; border-radius: 0.75rem; color: #fca5a5; font-size: 0.875rem; }
+.error-msg.active { display: block; }
+.clear-btn { margin-top: 0.75rem; background: none; border: 1px solid #334155; color: #94a3b8; padding: 0.375rem 0.75rem; border-radius: 0.375rem; cursor: pointer; font-size: 0.8125rem; transition: all 0.2s; }
+.clear-btn:hover { border-color: #64748b; color: #e2e8f0; }
+footer { margin-top: 3rem; text-align: center; font-size: 0.75rem; color: #475569; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>Apache Tika</h1>
+  <p class="sub">Extracción de metadatos y contenido de documentos</p>
+
+  <div class="dropzone" id="dropzone">
+    <svg class="dropzone-icon" fill="none" stroke="currentColor" stroke-width="1.5" viewBox="0 0 24 24">
+      <path stroke-linecap="round" stroke-linejoin="round" d="M3 16.5v2.25A2.25 2.25 0 005.25 21h13.5A2.25 2.25 0 0021 18.75V16.5m-13.5-9L12 3m0 0l4.5 4.5M12 3v13.5"/>
+    </svg>
+    <p>Arrastra un archivo aquí o <span class="browse" onclick="document.getElementById('fileInput').click()">selecciona uno</span></p>
+    <input type="file" id="fileInput">
+  </div>
+
+  <div class="status" id="status">
+    <div class="filename" id="fileName"></div>
+    <div class="progress"><div class="progress-bar" id="progressBar"></div></div>
+  </div>
+
+  <div class="error-msg" id="errorMsg"></div>
+
+  <div class="output" id="output">
+    <h2>Resultado</h2>
+    <div class="tabs">
+      <div class="tab active" data-mode="text" onclick="switchTab(this)">Texto</div>
+      <div class="tab" data-mode="meta" onclick="switchTab(this)">Metadatos</div>
+    </div>
+    <pre id="resultContent"></pre>
+    <button class="clear-btn" onclick="clearAll()">Limpiar</button>
+  </div>
+</div>
+
+<footer>Apache Tika 3.3.1 · Lab de Archivística</footer>
+
+<script>
+const dropzone = document.getElementById('dropzone');
+const fileInput = document.getElementById('fileInput');
+const status = document.getElementById('status');
+const fileName = document.getElementById('fileName');
+const progressBar = document.getElementById('progressBar');
+const output = document.getElementById('output');
+const resultContent = document.getElementById('resultContent');
+const errorMsg = document.getElementById('errorMsg');
+
+let currentFile = null;
+let textResult = '';
+let metaResult = '';
+
+dropzone.addEventListener('dragover', e => { e.preventDefault(); dropzone.classList.add('dragover'); });
+dropzone.addEventListener('dragleave', () => dropzone.classList.remove('dragover'));
+dropzone.addEventListener('drop', e => { e.preventDefault(); dropzone.classList.remove('dragover'); handleFile(e.dataTransfer.files[0]); });
+dropzone.addEventListener('click', () => fileInput.click());
+fileInput.addEventListener('change', () => { if (fileInput.files[0]) handleFile(fileInput.files[0]); });
+
+async function handleFile(file) {
+  if (!file) return;
+  currentFile = file;
+  fileName.textContent = file.name;
+  status.classList.add('active');
+  output.classList.remove('active');
+  errorMsg.classList.remove('active');
+  progressBar.style.width = '0%';
+  textResult = '';
+  metaResult = '';
+
+  await Promise.all([fetchTika(file, 'tika'), fetchTika(file, 'meta')]);
+
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  document.querySelector('.tab[data-mode="text"]').classList.add('active');
+  displayResult('text');
+}
+
+async function fetchTika(file, endpoint) {
+  try {
+    const xhr = new XMLHttpRequest();
+    xhr.open('PUT', '/tika/api/' + endpoint, true);
+    xhr.setRequestHeader('Content-Type', file.type || 'application/octet-stream');
+
+    xhr.upload.onprogress = e => {
+      if (e.lengthComputable) progressBar.style.width = Math.round((e.loaded / e.total) * 90) + '%';
+    };
+
+    xhr.onloadend = () => {
+      progressBar.style.width = '100%';
+      setTimeout(() => { status.classList.remove('active'); }, 500);
+    };
+
+    return new Promise(resolve => {
+      xhr.onload = () => {
+        if (xhr.status >= 200 && xhr.status < 300) {
+          if (endpoint === 'tika') textResult = xhr.responseText;
+          else metaResult = xhr.responseText;
+          displayResult(document.querySelector('.tab.active')?.dataset.mode || 'text');
+        } else {
+          showError('Error ' + xhr.status + ': ' + (xhr.responseText || 'No se pudo procesar el archivo'));
+        }
+        resolve();
+      };
+      xhr.onerror = () => { showError('Error de conexión con el servidor Tika'); resolve(); };
+      xhr.send(file);
+    });
+  } catch (e) {
+    showError(e.message);
+  }
+}
+
+function displayResult(mode) {
+  const raw = mode === 'meta' ? metaResult : textResult;
+  if (!raw) return;
+  output.classList.add('active');
+  try {
+    const parsed = JSON.parse(raw);
+    resultContent.textContent = JSON.stringify(parsed, null, 2);
+  } catch {
+    resultContent.textContent = raw;
+  }
+}
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+  tab.classList.add('active');
+  if (currentFile) displayResult(tab.dataset.mode);
+}
+
+function showError(msg) {
+  errorMsg.textContent = msg;
+  errorMsg.classList.add('active');
+  status.classList.remove('active');
+  output.classList.remove('active');
+}
+
+function clearAll() {
+  output.classList.remove('active');
+  errorMsg.classList.remove('active');
+  status.classList.remove('active');
+  fileInput.value = '';
+  currentResult = '';
+}
+</script>
+</body>
+</html>

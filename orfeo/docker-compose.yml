@@ -1,0 +1,99 @@
+# OrfeoNG - Docker Compose
+# PHP 8.1 + Yii2 (backend), Angular 14 (frontend), Node.js (sockets), MySQL 5.7
+#
+# Uso: docker compose up --build -d
+
+services:
+
+  mysql:
+    image: mysql:5.7
+    container_name: orfeo-mysql
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: ${MYSQL_ROOT_PASSWORD:-root_secret_2026}
+      MYSQL_DATABASE: ${DB_NAME:-orfeoNG_db}
+      MYSQL_USER: ${DB_USER:-orfeo}
+      MYSQL_PASSWORD: ${DB_PASS:-orfeo123}
+    ports:
+      - "127.0.0.1:3307:3306"
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ./db/init.sql:/docker-entrypoint-initdb.d/01-init.sql
+    healthcheck:
+      test: ["CMD", "mysqladmin", "ping", "-h", "localhost", "-u", "root", "-p${MYSQL_ROOT_PASSWORD:-root_secret_2026}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - orfeo-network
+
+  backend:
+    build:
+      context: ./backend
+      args:
+        BACKEND_REPO: ${BACKEND_REPO:-https://github.com/skinatech/orfeong_backend.git}
+    container_name: orfeo-backend
+    restart: unless-stopped
+    depends_on:
+      mysql:
+        condition: service_healthy
+    environment:
+      DB_HOST: mysql
+      DB_PORT: 3306
+      DB_NAME: ${DB_NAME:-orfeoNG_db}
+      DB_USER: ${DB_USER:-orfeo}
+      DB_PASS: ${DB_PASS:-orfeo123}
+      AES_KEY: ${AES_KEY:-aegoh3quai3Aijum7cae0theifo_uv}
+      SERVER_URL: ${SERVER_URL:-http://localhost:64000}
+    networks:
+      - orfeo-network
+
+  frontend:
+    build:
+      context: ./frontend
+      args:
+        FRONTEND_REPO: ${FRONTEND_REPO:-https://github.com/skinatech/orfeong_frontend.git}
+        API_URL: /ng_backend/api/web/
+        API_BASE_PATH: /ng_backend
+        FRONT_URL: /orfeo-ng/
+        SOCKET_ENDPOINT: /socket
+        AES_KEY: ${AES_KEY:-aegoh3quai3Aijum7cae0theifo_uv}
+    container_name: orfeo-frontend
+    restart: unless-stopped
+    depends_on:
+      - backend
+    networks:
+      - orfeo-network
+
+  sockets:
+    build:
+      context: ./sockets
+      args:
+        SOCKETS_REPO: ${SOCKETS_REPO:-https://github.com/skinatech/orfeong_sockets.git}
+    container_name: orfeo-sockets
+    restart: unless-stopped
+    networks:
+      - orfeo-network
+
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: orfeo-nginx
+    restart: unless-stopped
+    ports:
+      - "${PORT:-64000}:80"
+    volumes:
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    depends_on:
+      - frontend
+      - backend
+      - sockets
+    networks:
+      - orfeo-network
+
+networks:
+  orfeo-network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+    driver: local

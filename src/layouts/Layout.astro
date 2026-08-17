@@ -1,16 +1,19 @@
 ---
 import '../styles/global.css';
+import { ClientRouter } from 'astro:transitions';
 import Header from '../components/Header.astro';
 import Footer from '../components/Footer.astro'
 
 interface Props {
   title?: string;
   description?: string;
+  image?: string;
 }
 
 const {
   title = 'Laboratorio de Archivística y Humanidades Digitales | Universidad Distrital Francisco José',
   description = 'Espacio académico para la gestión, análisis y transformación de la información con tecnología, innovación y compromiso social.',
+  image = '/LOGOTIPO---UD-FCE-COLOR.png',
 } = Astro.props;
 ---
 
@@ -21,7 +24,18 @@ const {
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
     <meta name="description" content={description} />
+    <meta property="og:type" content="website" />
+    <meta property="og:url" content="https://labhumanidades.udistrital.edu.co/" />
+    <meta property="og:title" content={title} />
+    <meta property="og:description" content={description} />
+    <meta property="og:image" content={`https://labhumanidades.udistrital.edu.co${image}`} />
+    <meta name="twitter:card" content="summary_large_image" />
+    <meta name="twitter:title" content={title} />
+    <meta name="twitter:description" content={description} />
+    <meta name="twitter:image" content={`https://labhumanidades.udistrital.edu.co${image}`} />
     <title>{title}</title>
+
+    <ClientRouter />
 
     <!-- Google Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com" />

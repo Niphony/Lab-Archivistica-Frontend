@@ -1,20 +1,21 @@
 ---
 import { Image } from 'astro:assets';
 import logoud from '../assets/LOGOTIPO---UD-FCE-BLANCO.png';
+import logolab from '../assets/LOGO 000000_white.png'
 
 const navLinks = [
-  { label: 'Inicio',       href: '/',              active: Astro.url.pathname === '/' },
-  { label: 'Servicios',    href: '/servicios',     active: Astro.url.pathname.startsWith('/servicios') },
-  { label: 'Software',     href: '/software',      active: Astro.url.pathname.startsWith('/software') },
-  { label: 'Equipos',      href: '/equipos',       active: Astro.url.pathname.startsWith('/equipos') },
-  { label: 'Investigación',href: '/investigacion', active: Astro.url.pathname.startsWith('/investigacion') },
+  { label: 'Inicio',       href: '/',                        active: Astro.url.pathname === '/' },
+  { label: 'Servicios',    href: '/servicios',               active: Astro.url.pathname.startsWith('/servicios') },
+  { label: 'Software',     href: '/software',                active: Astro.url.pathname.startsWith('/software') },
+  { label: 'Equipos',      href: '/equipos',                 active: Astro.url.pathname.startsWith('/equipos') },
+  { label: 'Noticias y Eventos',     href: '/noticias',      active: Astro.url.pathname.startsWith('/noticias') },
   { label: 'Contacto',     href: '/#ContactoFooter'},
 ];
 ---
 
 <header class="bg-navy-900 border-b border-white/10 sticky top-0 z-50">
   <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-    <div class="flex items-center justify-between h-16 lg:h-17.5">
+    <div class="flex items-center h-16 lg:h-17.5">
 
       <!-- Logo left -->
       <a href="/" class="flex items-center gap-3 shrink-0">
@@ -22,7 +23,7 @@ const navLinks = [
   <Image
     src={logoud}
     alt="Universidad Distrital Francisco José de Caldas"
-    class="h-20 w-auto object-contain"
+    class="h-20 lg:h-20 w-auto object-contain"
   />
 </div> 
 
@@ -31,10 +32,12 @@ const navLinks = [
 
         <!-- Lab logo -->
         <div class="hidden md:flex items-center gap-2">
-          <div class="w-9 h-9 border-2 border-accent-500 rounded flex items-center justify-center">
-            <svg viewBox="0 0 24 24" class="w-5 h-5 text-accent-400" fill="none" stroke="currentColor" stroke-width="1.5">
-              <path stroke-linecap="round" stroke-linejoin="round" d="M20.25 7.5l-.625 10.632a2.25 2.25 0 01-2.247 2.118H6.622a2.25 2.25 0 01-2.247-2.118L3.75 7.5M10 11.25h4M3.375 7.5h17.25c.621 0 1.125-.504 1.125-1.125v-1.5c0-.621-.504-1.125-1.125-1.125H3.375c-.621 0-1.125.504-1.125 1.125v1.5c0 .621.504 1.125 1.125 1.125z" />
-            </svg>
+           <div class="w-15 h-15 rounded flex items-center justify-center">
+          <Image
+              src={logolab}
+              alt='Laboratorio de Archivistica y Humanidades Digitales logo'
+              class="h-12 w-auto object-contain" 
+              />
           </div>
           <div>
             <p class="text-[9px] text-white/50 uppercase tracking-widest leading-none">Laboratorio de</p>
@@ -44,8 +47,8 @@ const navLinks = [
         </div>
       </a>
 
-      <!-- Nav links desktop -->
-      <nav class="hidden lg:flex items-center gap-1">
+            <!-- Nav links desktop -->
+      <nav class="hidden lg:flex items-center gap-1 ml-auto">
         {navLinks.map((link) => (
           <a
             href={link.href}
@@ -58,7 +61,7 @@ const navLinks = [
             {link.label.toUpperCase()}
           </a>
         ))}
-      </nav>
+      
 <a
   href="https://aulasvirtuales.udistrital.edu.co/"
   target="_blank"
@@ -66,10 +69,12 @@ const navLinks = [
 >
   Moodle
 </a>
+      </nav>
+
       <!-- Mobile menu button -->
       <button
         id="menu-btn"
-        class="lg:hidden text-white/70 hover:text-white p-2"
+        class="lg:hidden ml-auto text-white/70 hover:text-white p-2"
         aria-label="Abrir menú"
       >
         <svg class="w-6 h-6" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24">
@@ -103,7 +108,17 @@ const navLinks = [
 </header>
 
 <script>
-  const btn = document.getElementById('menu-btn');
-  const menu = document.getElementById('mobile-menu');
-  btn?.addEventListener('click', () => menu?.classList.toggle('hidden'));
+  function initMenu() {
+    const btn = document.getElementById('menu-btn');
+    const menu = document.getElementById('mobile-menu');
+    if (!btn || !menu) return;
+
+    btn.addEventListener('click', () => {
+      const isOpen = !menu.classList.contains('hidden');
+      menu.classList.toggle('hidden');
+      btn.setAttribute('aria-expanded', String(!isOpen));
+    });
+  }
+
+  document.addEventListener('astro:page-load', initMenu);
 </script>

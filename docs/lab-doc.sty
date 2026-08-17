@@ -1,0 +1,389 @@
+% lab-doc.sty - Estilo para documentos del Laboratorio de Archivística
+% y Humanidades Digitales - Universidad Distrital Francisco José de Caldas.
+
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{lab-doc}[2026/08/14 v1.0 Estilo del Laboratorio de Archivistica]
+
+\IfFileExists{lato.sty}{%
+  \RequirePackage[default]{lato}%
+}{%
+  \IfFileExists{roboto.sty}{\RequirePackage[sfdefault,light]{roboto}}{}%
+}
+\IfFileExists{montserrat.sty}{%
+  \RequirePackage{montserrat}%
+}{}
+\renewcommand{\familydefault}{\rmdefault}
+
+\RequirePackage[a4paper, margin=2.5cm, headheight=32pt, headsep=1.4cm]{geometry}
+\RequirePackage{fancyhdr}
+\RequirePackage{graphicx}
+\RequirePackage{xcolor}
+\RequirePackage{float}
+\RequirePackage{caption}
+\RequirePackage{subcaption}
+\RequirePackage{adjustbox}
+\RequirePackage{mdframed}
+\RequirePackage{enumitem}
+\RequirePackage{amsmath}
+\RequirePackage{amsfonts}
+\RequirePackage{amssymb}
+\RequirePackage{textcomp}
+\RequirePackage{microtype}
+\RequirePackage{listings}
+\RequirePackage{xparse}
+\RequirePackage{tikz}
+\RequirePackage{pgfplots}
+\RequirePackage{titlesec}
+\RequirePackage{tocloft}
+\RequirePackage{etoolbox}
+
+\pgfplotsset{compat=1.18}
+
+\definecolor{labnavy}{HTML}{0F172A}
+\definecolor{labnavy2}{HTML}{1E293B}
+\definecolor{labcyan}{HTML}{0EA5E9}
+\definecolor{labcyandark}{HTML}{0284C7}
+\definecolor{labgris}{HTML}{64748B}
+\definecolor{labgrisclaro}{HTML}{E2E8F0}
+\definecolor{labblanco}{HTML}{FFFFFF}
+
+\RequirePackage[hidelinks]{hyperref}
+\hypersetup{
+  colorlinks  = true,
+  linkcolor   = labcyandark,
+  urlcolor    = labcyan,
+  citecolor   = labcyandark,
+  pdfborder   = {0 0 0},
+  pdftitle    = {Manual del Laboratorio de Archivistica y Humanidades Digitales},
+  pdfauthor   = {Laboratorio de Archivistica - Universidad Distrital},
+}
+
+\setlist[itemize,1]{
+  leftmargin=2em,
+  itemsep=0.7em,
+  parsep=0.3em,
+  topsep=0.7em,
+  label=\raisebox{0.2ex}{\tikz\draw[labnavy,fill=labnavy] (0,0) circle (2pt);}
+}
+\setlist[itemize,2]{
+  leftmargin=2.5em,
+  itemsep=0.4em,
+  parsep=0.2em,
+  label=\raisebox{0.2ex}{\tikz\draw[labgris,fill=labgris] (0,0) circle (1.2pt);}
+}
+\setlist[enumerate]{
+  leftmargin=2em,
+  itemsep=0.7em,
+  parsep=0.3em,
+  topsep=0.7em
+}
+
+\setlength{\parskip}{1em}
+\setlength{\parindent}{0pt}
+
+\captionsetup{
+  font=small,
+  labelfont=bf,
+  format=plain,
+  justification=centering,
+  singlelinecheck=false,
+  width=0.9\textwidth
+}
+
+\mdfdefinestyle{figurestyle}{
+  linewidth=1pt,
+  linecolor=labgris,
+  backgroundcolor=white,
+  innertopmargin=10pt,
+  innerbottommargin=10pt,
+  innerleftmargin=10pt,
+  innerrightmargin=10pt,
+  roundcorner=5pt,
+  shadow=true,
+  shadowsize=3pt,
+  shadowcolor=black!20
+}
+\mdfdefinestyle{terminalstyle}{
+  linewidth=2pt,
+  linecolor=labcyandark,
+  backgroundcolor=black!5,
+  innertopmargin=15pt,
+  innerbottommargin=15pt,
+  innerleftmargin=15pt,
+  innerrightmargin=15pt,
+  roundcorner=8pt,
+  shadow=true,
+  shadowsize=4pt,
+  shadowcolor=labcyandark!30
+}
+\mdfdefinestyle{codestyle}{
+  linewidth=1.5pt,
+  linecolor=labgris,
+  backgroundcolor=labgrisclaro!40,
+  innertopmargin=12pt,
+  innerbottommargin=12pt,
+  innerleftmargin=12pt,
+  innerrightmargin=12pt,
+  roundcorner=6pt,
+  shadow=true,
+  shadowsize=3pt,
+  shadowcolor=labgris!20
+}
+\mdfdefinestyle{importantstyle}{
+  linewidth=2pt,
+  linecolor=labnavy,
+  backgroundcolor=labnavy!4,
+  innertopmargin=15pt,
+  innerbottommargin=15pt,
+  innerleftmargin=15pt,
+  innerrightmargin=15pt,
+  roundcorner=8pt,
+  shadow=true,
+  shadowsize=4pt,
+  shadowcolor=labnavy!25
+}
+
+\renewcommand{\cfttoctitlefont}{\LARGE\bfseries}
+\renewcommand{\cftchapfont}{\Large\bfseries}
+\renewcommand{\cftsecfont}{\large\color{labgris}}
+\renewcommand{\cftsubsecfont}{\normalsize\color{labgris}}
+\renewcommand{\cftsubsubsecfont}{\normalsize\color{labgris}}
+\renewcommand{\cftchappagefont}{\bfseries}
+\renewcommand{\cftsecpagefont}{\color{labgris}}
+\renewcommand{\cftsubsecpagefont}{\color{labgris}}
+\renewcommand{\cftsubsubsecpagefont}{\color{labgris}}
+\renewcommand{\cftchapleader}{\color{labgris}\leaders\hbox{\raisebox{0.2ex}{\tiny$\bullet$}\hskip 0.5em}\hfill}
+\renewcommand{\cftsecleader}{\color{labgris}\leaders\hbox{\raisebox{0.2ex}{\tiny$\circ$}\hskip 0.3em}\hfill}
+\renewcommand{\cftchapafterpnum}{\color{labgris}\quad\rule{0.5pt}{0.8em}}
+\setlength{\cftbeforetoctitleskip}{-1em}
+\setlength{\cftaftertoctitleskip}{1.5em}
+\setlength{\cftchapnumwidth}{2em}
+\setlength{\cftsecindent}{2em}
+\setlength{\cftsecnumwidth}{3em}
+
+\makeatletter
+\patchcmd{\tableofcontents}{\@starttoc{toc}}
+  {\vspace*{2em}\noindent\rule{\textwidth}{0.7pt}\par\@starttoc{toc}\vspace{1em}\noindent\rule{\textwidth}{0.7pt}\par}
+  {}{}
+
+\newcommand{\subtitle}[2][labgris]{%
+    \vspace{0.5em}%
+    {\par\Large\scshape\textls[150]{#2}\par}%
+    \vspace{0.5em}%
+}
+
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{1pt}
+\fancyhead[L]{\includegraphics[height=1.2cm]{ud-color.png}}
+\fancyhead[R]{\large\bfseries\color{labnavy}\@doctitulo}
+\fancyfoot[C]{%
+    \begin{tikzpicture}[baseline=(current bounding box.center)]
+        \node[
+            font=\sffamily\bfseries\color{labnavy},
+            inner sep=5pt
+        ] (num) {\thepage};
+        \draw[labgris, line width=0.5pt] (num.west) -- ++(-2cm,0);
+        \draw[labgris, line width=0.5pt] (num.east) -- ++(2cm,0);
+    \end{tikzpicture}%
+}
+\renewcommand{\footrulewidth}{0pt}
+
+\newcommand{\chaptercolor}{labnavy}
+\titleformat{\chapter}[block]
+    {\Huge\bfseries\color{\chaptercolor}\sffamily}
+    {\begin{tikzpicture}[baseline=(char.base)]
+            \node[rectangle, fill=labnavy, rounded corners=3pt, inner sep=6pt] (char) {\color{white}\thechapter};
+        \end{tikzpicture}}
+    {1em}
+    {\Huge\bfseries\color{\chaptercolor}}
+    [\vspace{0.5em}{\color{labcyan}\titlerule[2pt]}\thispagestyle{chapternoline}]
+
+\fancypagestyle{chapternoline}{
+    \fancyhf{}
+    \fancyfoot[C]{%
+        \begin{tikzpicture}[baseline=(current bounding box.center)]
+            \node[
+                font=\sffamily\bfseries\color{labnavy},
+                inner sep=5pt
+            ] (num) {\thepage};
+            \draw[labgris, line width=0.5pt] (num.west) -- ++(-2cm,0);
+            \draw[labgris, line width=0.5pt] (num.east) -- ++(2cm,0);
+        \end{tikzpicture}%
+    }
+    \renewcommand{\headrulewidth}{0pt}
+\renewcommand{\footrulewidth}{0pt}
+}
+
+\titleformat{\section}
+    {\Large\bfseries\color{labnavy}\sffamily}
+    {\thesection}{1em}{}
+\titleformat{\subsection}
+    {\large\bfseries\color{labgris}\sffamily}
+    {\thesubsection}{1em}{}
+\titleformat{\subsubsection}
+    {\normalsize\bfseries\color{labgris}\sffamily}
+    {\thesubsubsection}{1em}{}
+
+\lstset{
+    basicstyle=\ttfamily\small,
+    backgroundcolor=\color{labgrisclaro!40},
+    commentstyle=\color{labgris},
+    keywordstyle=\color{labcyandark}\bfseries,
+    stringstyle=\color{labnavy},
+    numberstyle=\tiny\color{labgris},
+    breaklines=true,
+    breakatwhitespace=true,
+    postbreak=\mbox{\textcolor{labgris}{$\hookrightarrow$}\space},
+    showstringspaces=false,
+    tabsize=2,
+    frame=none,
+    rulecolor=\color{labgris!30},
+    columns=fullflexible,
+    keepspaces=true,
+    upquote=true
+}
+
+\newcommand{\terminalblock}[1]{%
+    \begin{mdframed}[style=terminalstyle]
+        \textcolor{labcyandark}{\textbf{Terminal:}}\\[0.3em]
+        \begin{flushleft}
+            \ttfamily\small
+            \def\\{\par\vspace{0.2em}}%
+            #1
+        \end{flushleft}
+    \end{mdframed}%
+}
+
+\newcommand{\codeblock}[2][]{%
+    \begin{mdframed}[style=codestyle]
+        \ifx\relax#1\relax\else
+            \textcolor{labgris}{\textbf{#1}}\\[0.3em]
+        \fi
+        \begin{flushleft}
+            \ttfamily\small
+            \def\\{\par\vspace{0.2em}}%
+            #2
+        \end{flushleft}
+    \end{mdframed}%
+}
+
+\newcommand{\singlecmd}[1]{%
+    \begin{mdframed}[style=terminalstyle]
+        \textcolor{labcyandark}{\textbf{Terminal:}}\\[0.3em]
+        \texttt{\textcolor{black}{#1}}
+    \end{mdframed}%
+}
+
+\newcommand{\multicmd}[1]{%
+    \begin{mdframed}[style=terminalstyle]
+        \textcolor{labcyandark}{\textbf{Terminal:}}\\[0.3em]
+        \small\ttfamily
+        \begin{tabular}{@{}l@{}}
+            #1
+        \end{tabular}
+    \end{mdframed}%
+}
+
+\RenewDocumentCommand{\texttt}{m}{%
+  \begingroup
+    \ttfamily
+    \hyphenchar\font=`\-%
+    \exhyphenpenalty=10000 %
+    \emergencystretch=1em %
+    \raggedright
+    #1%
+  \endgroup
+}
+
+\def\@doctitulo{Manual del Laboratorio de Archivística}
+\def\@docsubtitulo{Manual de usuario}
+\def\@docautores{Equipo del Laboratorio}
+\def\@docasistente{}
+\def\@docciudad{Bogotá, Colombia}
+\def\@docfecha{2026}
+
+\newcommand{\doctitulo}[1]{\renewcommand{\@doctitulo}{#1}}
+\newcommand{\docsubtitulo}[1]{\renewcommand{\@docsubtitulo}{#1}}
+\newcommand{\docautores}[1]{\renewcommand{\@docautores}{#1}}
+\newcommand{\docasistente}[1]{\renewcommand{\@docasistente}{#1}}
+\newcommand{\docciudad}[1]{\renewcommand{\@docciudad}{#1}}
+\newcommand{\docfecha}[1]{\renewcommand{\@docfecha}{#1}}
+
+\graphicspath{{images/}{../images/}}
+
+\newcommand{\portadalab}{%
+  \begin{titlepage}
+    \begin{tikzpicture}[remember picture, overlay]
+      \fill[labnavy] (current page.south west) rectangle (current page.north east);
+    \end{tikzpicture}
+    \color{labblanco}
+    \begin{flushleft}
+      \includegraphics[height=2.4cm]{lab-blanco.png}%
+      \hfill
+      \begin{minipage}{0.5\textwidth}
+        \raggedleft
+        {\large\textbf{UNIVERSIDAD DISTRITAL}\\[2pt]
+         FRANCISCO JOSÉ DE CALDAS}\\[4pt]
+        {\large\textbf{Facultad de Ingeniería}}
+      \end{minipage}
+    \end{flushleft}
+    \vspace{7cm}
+    {\Huge\bfseries\@doctitulo}\\[0.4cm]
+    {\Large\color{labcyan}\@docsubtitulo}
+    \vspace{4cm}
+
+    \begin{minipage}{0.45\textwidth}
+      \color{labblanco}
+      \textbf{AUTORES:}\\ \@docautores
+    \end{minipage}%
+    \hfill
+    \begin{minipage}{0.45\textwidth}
+      \color{labblanco}
+      \raggedleft
+      \ifx\@docasistente\empty\else
+        \textbf{ASISTENTE:}\\ \@docasistente
+      \fi
+    \end{minipage}
+
+    \vfill
+    {\large \@docciudad \hfill \@docfecha}
+  \end{titlepage}
+}
+
+\newcommand{\portadaclara}{%
+  \begin{titlepage}
+    \begin{flushleft}
+      \includegraphics[width=5cm]{ud-color.png}%
+      \hfill
+      \begin{minipage}{0.5\textwidth}
+        \raggedleft
+        {\large\textbf{UNIVERSIDAD DISTRITAL}\\[2pt]
+         FRANCISCO JOSÉ DE CALDAS}\\[4pt]
+        {\large\textbf{Facultad de Ingeniería}}
+      \end{minipage}
+    \end{flushleft}
+    \vspace{7cm}
+    {\Huge\bfseries\color{labnavy}\@doctitulo}\\[0.4cm]
+    {\Large\color{labnavy}\@docsubtitulo}
+    \vspace{4cm}
+
+    \begin{minipage}{0.45\textwidth}
+      \color{labnavy}
+      \textbf{AUTORES:}\\ \@docautores
+    \end{minipage}%
+    \hfill
+    \begin{minipage}{0.45\textwidth}
+      \color{labnavy}
+      \raggedleft
+      \ifx\@docasistente\empty\else
+        \textbf{ASISTENTE:}\\ \@docasistente
+      \fi
+    \end{minipage}
+
+    \vfill
+    {\large\color{labnavy} \@docciudad \hfill \@docfecha}
+  \end{titlepage}
+}
+
+\endinput

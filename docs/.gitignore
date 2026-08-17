@@ -1,0 +1,17 @@
+# Auxiliares y PDFs generados por LaTeX (no se versionan)
+manual-*/*.aux
+manual-*/*.log
+manual-*/*.out
+manual-*/*.toc
+manual-*/*.lof
+manual-*/*.lot
+manual-*/*.fls
+manual-*/*.fdb_latexmk
+manual-*/*.synctex.gz
+manual-*/*.bbl
+manual-*/*.blg
+manual-*/*.nav
+manual-*/*.snm
+manual-*/*.vrb
+manual-*/*.run.xml
+manual-*/main.pdf
