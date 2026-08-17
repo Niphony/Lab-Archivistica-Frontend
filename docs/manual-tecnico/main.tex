@@ -63,6 +63,7 @@ Este manual está dirigido a:
   \item Los fragmentos de código o configuración aparecen en cajas de
         \textbf{Código}.
   \item Las advertencias y recomendaciones aparecen en cajas resaltadas.
+  \item \textbf{IMPORTANTE: } La ejecución de un script de bash en el manual se indiica bash nombre\_comando, la palabra bash hace referencia a: ./nombre\_comando , tomar siempre esto en cuenta a la hora de ejecutar un script. 
 \end{itemize}
 
 \chapter{Visión general de la arquitectura}
@@ -308,6 +309,16 @@ La configuración sensible se define mediante variables de entorno (archivo
   repositorio público. Copie \texttt{.env.example} (si existe) y ajuste los
   valores.
 \end{mdframed}
+
+Otras variables de entorno, importantes:
+
+\begin{itemize}
+  \item \texttt{dspace.server.url}: Locación del servicio de servidor de Dspace. 
+    \item \texttt{dspace.ui.url}: Locación del servicio de frontend de Dspace. 
+    \item \texttt{cors.allowed.origins / rest.cors.allowed-origins}: Ubicaciones que permite dspace para ser accedido desde ellas, necesitan cambiar junto con el certificado del sitio si se requiere.
+\end{itemize}
+
+
 
 \section{Levantar el portal completo}
 
@@ -725,6 +736,7 @@ Para actualizar las imágenes base (nginx, node, DSpace, Tika):
 \chapter{Resolución de problemas}
 
 \begin{itemize}
+   \item \textbf{Nginx no me redirigue a donde necesito.} Detenga docker, y cambie el mapeo en \texttt{docker-compose.yml}, por la dirección necesitada incluida las variables necesarias.
   \item \textbf{El puerto 80 está ocupado.} Detenga el servicio que lo usa o
         cambie el mapeo en \texttt{docker-compose.yml}.
   \item \textbf{Error 502 en \texttt{/atom/}, \texttt{/archivematica/} o
@@ -733,6 +745,8 @@ Para actualizar las imágenes base (nginx, node, DSpace, Tika):
   \item \textbf{Orfeo no responde.} Confirme que \texttt{orfeo-mysql} esté
         sano (\texttt{docker compose ps}) y revise los logs del backend.
   \item \textbf{DSpace tarda en iniciar.} La API ejecuta una migración de base
+        de datos al arrancar; espere a que el healthcheck del contenedor pase.
+   \item \textbf{DSpace no carga al cambiar la dirección o certificado del sitio.} Revise dentro de la carpeta de dspace, el archivo local.cfg y cambie lo necesario, despúes vuelva a levantar el servicio.
         de datos al arrancar; espere a que el healthcheck del contenedor pase.
   \item \textbf{Noticias desactualizadas.} Ejecute
         \texttt{actualizar\_pagina-noticias.sh} para reconstruir el frontend.
