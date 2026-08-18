@@ -7,8 +7,9 @@
 
 
 \doctitulo{Manual Técnico del Portal del Laboratorio de Archivística y Humanidades Digitales}
+\docbanner{Manual Técnico}
 \docsubtitulo{Manual técnico}
-\docautores{Equipo del Laboratorio de Archivística\\ Universidad Distrital Francisco José de Caldas}
+\docautores{Equipo del Laboratorio de Archivística\\Hexoneira:\\ Juan Carlos Quintero y\\ Nicolas Acevedo\\ Universidad Distrital Francisco José de Caldas}
 \docciudad{Bogotá, Colombia}
 \docfecha{2026}
 
@@ -63,7 +64,7 @@ Este manual está dirigido a:
   \item Los fragmentos de código o configuración aparecen en cajas de
         \textbf{Código}.
   \item Las advertencias y recomendaciones aparecen en cajas resaltadas.
-  \item \textbf{IMPORTANTE: } La ejecución de un script de bash en el manual se indiica bash nombre\_comando, la palabra bash hace referencia a: ./nombre\_comando , tomar siempre esto en cuenta a la hora de ejecutar un script. 
+  \item \textbf{IMPORTANTE: } La ejecución de un script de bash en el manual se indica como \texttt{bash nombre\_comando}; la palabra \texttt{bash} equivale a \texttt{./nombre\_comando}. Tome siempre esto en cuenta a la hora de ejecutar un script. 
 \end{itemize}
 
 \chapter{Visión general de la arquitectura}
@@ -747,7 +748,6 @@ Para actualizar las imágenes base (nginx, node, DSpace, Tika):
   \item \textbf{DSpace tarda en iniciar.} La API ejecuta una migración de base
         de datos al arrancar; espere a que el healthcheck del contenedor pase.
    \item \textbf{DSpace no carga al cambiar la dirección o certificado del sitio.} Revise dentro de la carpeta de dspace, el archivo local.cfg y cambie lo necesario, despúes vuelva a levantar el servicio.
-        de datos al arrancar; espere a que el healthcheck del contenedor pase.
   \item \textbf{Noticias desactualizadas.} Ejecute
         \texttt{actualizar\_pagina-noticias.sh} para reconstruir el frontend.
   \item \textbf{Los contenedores no resuelven entre sí.} Asegúrese de que todos

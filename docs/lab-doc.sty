@@ -175,8 +175,8 @@
 \pagestyle{fancy}
 \fancyhf{}
 \renewcommand{\headrulewidth}{1pt}
-\fancyhead[L]{\includegraphics[height=1.2cm]{ud-color.png}}
-\fancyhead[R]{\large\bfseries\color{labnavy}\@doctitulo}
+\fancyhead[L]{\includegraphics[height=0.9cm]{ud-color.png}}
+\fancyhead[R]{\large\bfseries\color{labnavy}\ifx\@docbanner\empty\@doctitulo\else\@docbanner\fi}
 \fancyfoot[C]{%
     \begin{tikzpicture}[baseline=(current bounding box.center)]
         \node[
@@ -297,6 +297,7 @@
 }
 
 \def\@doctitulo{Manual del Laboratorio de Archivística}
+\def\@docbanner{}
 \def\@docsubtitulo{Manual de usuario}
 \def\@docautores{Equipo del Laboratorio}
 \def\@docasistente{}
@@ -304,6 +305,7 @@
 \def\@docfecha{2026}
 
 \newcommand{\doctitulo}[1]{\renewcommand{\@doctitulo}{#1}}
+\newcommand{\docbanner}[1]{\renewcommand{\@docbanner}{#1}}
 \newcommand{\docsubtitulo}[1]{\renewcommand{\@docsubtitulo}{#1}}
 \newcommand{\docautores}[1]{\renewcommand{\@docautores}{#1}}
 \newcommand{\docasistente}[1]{\renewcommand{\@docasistente}{#1}}
@@ -321,14 +323,9 @@
     \begin{flushleft}
       \includegraphics[height=2.4cm]{lab-blanco.png}%
       \hfill
-      \begin{minipage}{0.5\textwidth}
-        \raggedleft
-        {\large\textbf{UNIVERSIDAD DISTRITAL}\\[2pt]
-         FRANCISCO JOSÉ DE CALDAS}\\[4pt]
-        {\large\textbf{Facultad de Ingeniería}}
-      \end{minipage}
+      \includegraphics[height=4.5cm]{ud-fce-blanco.png}%
     \end{flushleft}
-    \vspace{7cm}
+    \vspace{4.5cm}
     {\Huge\bfseries\@doctitulo}\\[0.4cm]
     {\Large\color{labcyan}\@docsubtitulo}
     \vspace{4cm}
