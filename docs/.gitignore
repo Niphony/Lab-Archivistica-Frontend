@@ -15,3 +15,5 @@ manual-*/*.snm
 manual-*/*.vrb
 manual-*/*.run.xml
 manual-*/main.pdf
+# PDFs finales compilados: se publican como assets de release, no se versionan
+manual-*/*.pdf
