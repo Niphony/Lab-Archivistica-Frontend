@@ -201,7 +201,7 @@ services:
 
 networks:
   lab-network:
-    driver: bridge
+    external: true
 
 volumes:
   orfeo_mysql_data:

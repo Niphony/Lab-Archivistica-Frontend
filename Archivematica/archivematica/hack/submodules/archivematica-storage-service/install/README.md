@@ -1,0 +1,849 @@
+# Storage Service Configuration
+
+## Table of contents
+
+<!-- START doctoc generated TOC please keep comment here to allow auto update -->
+<!-- DON'T EDIT THIS SECTION, INSTEAD RE-RUN doctoc TO UPDATE -->
+
+- [Introduction](#introduction)
+- [Environment variables](#environment-variables)
+  - [Application-specific environment variables](#application-specific-environment-variables)
+  - [Gunicorn-specific environment variables](#gunicorn-specific-environment-variables)
+  - [LDAP-specific environment variables](#ldap-specific-environment-variables)
+  - [CAS-specific environment variables](#cas-specific-environment-variables)
+  - [OIDC-specific environment variables](#oidc-specific-environment-variables)
+  - [AWS-specific environment variables](#aws-specific-environment-variables)
+  - [CSP-specific environment variables](#csp-specific-environment-variables)
+- [Logging configuration](#logging-configuration)
+  - [Overriding the logging configuration](#overriding-the-logging-configuration)
+  - [Increase or decrease the logging output](#increase-or-decrease-the-logging-output)
+
+<!-- END doctoc generated TOC please keep comment here to allow auto update -->
+
+## Introduction
+
+The configuration system in Storage Service is based on the following pattern:
+
+1. **Environment variables** - setting a configuration parameter with an
+   environment variable will override all other methods.
+1. **Application defaults**  - if the parameter is not set in an environment
+   variable or the config file, the application default is used.
+
+Logging behaviour is configured differently, and provides two methods:
+
+1. **`logging.json` file** - if a JSON file is present in the default location,
+    the contents of the JSON file will control the components logging behaviour.
+1. **Application default** - if no JSON file is present, the default logging
+   behaviour is to write to standard streams (standard out and standard error).
+
+## Environment variables
+
+The value of an environment variable is a string of characters. The
+configuration system coerces the value to the types supported:
+
+- `string` (e.g. `"foobar"`)
+- `int` (e.g. `"60"`)
+- `float` (e.g. `"1.20"`)
+- `boolean` where truth values can be represented as follows (checked in a
+  case-insensitive manner):
+  - True (enabled):  `"1"`, `"yes"`, `"true"` or `"on"`
+  - False (disabled): `"0"`, `"no"`, `"false"` or `"off"`
+
+Certain environment strings are mandatory, i.e. they don't have defaults and
+the application will refuse to start if the user does not provide one.
+
+Please be aware that Archivematica supports different types of distributions
+(Ubuntu/CentOS packages, Ansible or Docker images) and they may override some
+of these settings or provide values to mandatory fields.
+
+### Application-specific environment variables
+
+- **`DJANGO_SETTINGS_MODULE`**:
+  - **Description:** the [settings module] used by Django. There are three
+    modules available: [storage_service.settings.production](../storage_service/storage_service/settings/production.py),
+    [storage_service.settings.local](../storage_service/storage_service/settings/local.py)
+    and [storage_service.settings.test](../storage_service/storage_service/settings/test.py).
+    Unless you are a developer you should only use the former.
+  - **Type:** `string`
+  - :red_circle: **Mandatory!**
+
+- **`DJANGO_ALLOWED_HOSTS`**:
+  - **Description:** comma-separated list of hosts or domain names that this
+    Django site can serve. See the [official docs][ALLOWED_HOSTS].
+  - **Type:** `string`
+  - :red_circle: **Mandatory!**
+
+- **`CSRF_TRUSTED_ORIGINS`**:
+  - **Description:** a comma separated list of trusted origins for unsafe
+    requests (e.g. POST). Must include the schema, e.g:
+    `"https://example.com,https://example2.com"`. <https://docs.djangoproject.com/en/dev/ref/settings/#csrf-trusted-origins>
+  - **Type:** `string`
+  - **Default:** `""`
+
+- **`USE_X_FORWARDED_HOST`**:
+  - **Description:** a boolean that specifies whether to use the
+    X-Forwarded-Host header in preference to the Host header. This should only
+    be enabled if a proxy which sets this header is in use. <https://docs.djangoproject.com/en/dev/ref/settings/#use-x-forwarded-host>
+  - **Type:** `boolean`
+  - **Defalt:** `false`
+
+- **`TIME_ZONE`**:
+  - **Description:** application time zone. See [TIME_ZONE] for more details.
+  - **Type:** `string`
+  - **Default:** `"UTC"`
+
+- **`SECRET_KEY`**:
+  - **Description:** a secret key used for cryptographic signing. See [SECRET_KEY]
+    for more details.
+  - **Type:** `string`
+  - :red_circle: **Mandatory!**
+
+- **`SESSION_COOKIE_SECURE`**:
+  - **Description:** determines if session cookies should only be sent over
+    HTTPS connections.
+  - **Type:** `boolean`
+  - **Default:** `true`
+
+- **`SESSION_COOKIE_HTTPONLY`**:
+  - **Description:** determines if session cookies should be accessible only
+    via HTTP and not via JavaScript.
+  - **Type:** `boolean`
+  - **Default:** `true`
+
+- **`SESSION_COOKIE_SAMESITE`**:
+  - **Description:** controls when session cookies are sent with cross-site
+    requests. Options are "Strict", "Lax", or "None".
+  - **Type:** `string`
+  - **Default:** `"Strict"`
+
+- **`CSRF_COOKIE_SECURE`**:
+  - **Description:** determines if CSRF cookies should only be sent over HTTPS
+    connections.
+  - **Type:** `boolean`
+  - **Default:** `true`
+
+- **`CSRF_COOKIE_HTTPONLY`**:
+  - **Description:** determines if CSRF cookies should be accessible only via
+    HTTP and not via JavaScript.
+  - **Type:** `boolean`
+  - **Default:** `true`
+
+- **`CSRF_COOKIE_SAMESITE`**:
+  - **Description:** controls when CSRF cookies are sent with cross-site
+    requests. Options are "Strict", "Lax", or "None".
+  - **Type:** `string`
+  - **Default:** `"Strict "`
+
+- **`SS_AUTH_PASSWORD_MINIMUM_LENGTH`**:
+  - **Description:** sets minimum length for user passwords.
+  - **Type:** `integer`
+  - **Default:** `8`
+
+- **`SS_AUTH_PASSWORD_DISABLE_COMMON_VALIDATION`**:
+  - **Description:** disables password validation that prevents users from using
+    passwords that occur in a list of common passwords.
+  - **Type:** `boolean`
+  - **Default:** `false`
+
+- **`SS_AUTH_PASSWORD_DISABLE_USER_ATTRIBUTE_SIMILARITY_VALIDATION`**:
+  - **Description:** disables password validation that prevents users from using
+    passwords that are too similar to their username and other user attributes.
+  - **Type:** `boolean`
+  - **Default:** `false`
+
+- **`SS_AUTH_PASSWORD_DISABLE_COMPLEXITY_VALIDATION`**:
+  - **Description:** disables password validation that checks that passwords
+    contain at least three of: lower-case characters, upper-case characters,
+    numbers, special characters.
+  - **Type:** `boolean`
+  - **Default:** `false`
+
+- **`SS_AUTH_DEFAULT_USER_ROLE`**:
+  - **Description:** user role that must be assigned to authenticated users that
+    would be readers otherwise based on the results given by the authentication
+    backend. Valid options are "manager", "reviewer" and "reader"
+    (or empty string).
+  - **Type:** `string`
+  - **Default:** `"reader"`
+
+- **`SS_SHIBBOLETH_AUTHENTICATION`**:
+  - **Description:** enables the Shibboleth authentication system. Other
+    settings related to Shibboleth cannot be defined via environment variables
+    at the moment, please edit [storage_service.settings.base](../storage_service/storage_service/settings/base.py)
+    manually.
+  - **Type:** `boolean`
+  - **Default:** `false`
+
+- **`SS_CAS_AUTHENTICATION`**:
+  - **Description:** enables the CAS (Central Authentication Service)
+    authentication system.
+  - **Type:** `boolean`
+  - **Default:** `false`
+
+- **`SS_BAG_VALIDATION_NO_PROCESSES`**:
+  - **Description:** number of concurrent processes used by BagIt. If Gunicorn
+    is being used to serve the Storage Service and its worker class is set to
+    `gevent`, then BagIt validation must use 1 process. Otherwise, calls to
+    `validate` will hang because of the incompatibility between gevent and
+    multiprocessing (BagIt) concurrency strategies. See [#708].
+  - **Type:** `int`
+  - **Default:** `1`
+
+- **`SS_GNUPG_HOME_PATH`**:
+  - **Description:** path of the GnuPG home directory. If this environment
+    string is not defined Storage Service will use its internal location directory.
+  - **Type:** `string`
+  - **Default:** `None`
+
+- **`SS_INSECURE_SKIP_VERIFY`**:
+  - **Description:** skip the SSL certificate verification process. This setting
+    should not be used in production environments.
+  - **Type:** `boolean`
+  - **Default:** `false`
+
+- **`SS_CSP_ENABLED`**:
+  - **Description:** **Experimental** support for [Control Security Policy]
+    headers.
+  - **Type:** `boolean`
+  - **Default:** `false`
+
+- **`SS_PROMETHEUS_ENABLED`**:
+  - **Description:** enable metrics export for collection by Prometheus.
+  - **Type:** `boolean`
+  - **Default:** `false`
+
+- **`SS_AUDIT_LOG_MIDDLEWARE`**:
+  - **Description:** enable X-Username header with authenticated HTTP responses.
+  - **Type:** `boolean`
+  - **Default:** `false`
+
+- **`SS_RSYNC_IO_TIMEOUT_SECONDS`**:
+  - **Description:** maximum number of seconds rsync may observe no I/O before
+    failing a transfer. This does not limit total transfer duration.
+  - **Type:** `integer`
+  - **Default:** `300`
+
+- **`SS_RSYNC_PROCESS_TIMEOUT_SECONDS`**:
+  - **Description:** maximum wall-clock runtime for an rsync process before
+    Storage Service terminates it.
+  - **Type:** `integer`
+  - **Default:** `86400`
+
+- **`SS_S3_TIMEOUTS`**:
+  - **Description:** read and connect timeouts for S3 matching your
+    implementation's recommended defaults.
+  - **Type:** `integer`
+  - **Default:** `900`
+
+- **`SS_S3_USE_THREADS`**:
+  - **Description:** enable boto3 S3 managed transfer threads for uploads and
+    downloads. Set to `false` if your environment has constrained CPU/memory,
+    unstable networking, backend throttling, or S3-compatible endpoints that
+    behave poorly under concurrent transfers.
+  - **Type:** `boolean`
+  - **Default:** `true`
+
+The configuration of the database is also declared via environment variables.
+Storage Service looks up the `SS_DB_URL` environment string. If defined, its
+value is expected to follow the form described in the [dj-database-url docs],
+e.g.: `mysql://username:password@192.168.1.20:3306/storage_service`. If
+undefined, Storage Service defaults to the `django.db.backends.sqlite3`[engine]
+and expects the following environment variables to be defined:
+
+- **`SS_DB_NAME`**:
+  - **Description:** see [the official description][DB_NAME].
+  - **Type:** `string`
+
+- **`SS_DB_PASSWORD`**:
+  - **Description:**  see [the official description][DB_PASSWORD].
+  - **Type:** `string`
+
+- **`SS_DB_HOST`**:
+  - **Description:**  see [the official description][DB_HOST].
+  - **Type:** `string`
+
+There are a limited number of email settings that can be populated via
+environment variables - we are hoping to improve this soon (see
+[#813]). We have some
+settings hard-coded (see [storage_service.settings.production](../storage_service/storage_service/settings/production.py)).
+This is the current list of strings supported:
+
+- **`EMAIL_BACKEND`**:
+  - **Description:** <https://docs.djangoproject.com/en/dev/ref/settings/#email-backend>
+  - **Type:** `string`
+  - **Default:** `django.core.mail.backends.smtp.EmailBackend`
+
+- **`EMAIL_HOST`**
+  - **Description:** <https://docs.djangoproject.com/en/dev/ref/settings/#email-host>
+  - **Type:** `string`
+  - **Default:** `smtp.gmail.com`
+
+- **`EMAIL_HOST_PASSWORD`**
+  - **Description:** <https://docs.djangoproject.com/en/dev/ref/settings/#email-host-password>
+  - **Type:** `string`
+  - **Default:** (empty string)
+
+- **`EMAIL_HOST_USER`**
+  - **Description:** <https://docs.djangoproject.com/en/dev/ref/settings/#email-host-user>
+  - **Type:** `string`
+  - **Default:** `your_email@example.com`
+
+- **`EMAIL_PORT`**
+  - **Description:** <https://docs.djangoproject.com/en/dev/ref/settings/#email-port>
+  - **Type:** `int`
+  - **Default:** `587`
+
+- **`EMAIL_SUBJECT_PREFIX`**
+  - **Description:** <https://docs.djangoproject.com/en/dev/ref/settings/#email-subject-prefix>
+  - **Type:** `string`
+  - **Default:** `[Archivematica Storage Service]`
+
+- **`DEFAULT_FROM_EMAIL`**
+  - **Description:** <https://docs.djangoproject.com/en/dev/ref/settings/#default-from-email>
+  - **Type:** `string`
+  - **Default:** `webmaster@localhost`
+
+- **`EMAIL_USE_TLS`**
+  - **Description:** <https://docs.djangoproject.com/en/dev/ref/settings/#email-use-tls>
+  - **Type:** `boolean`
+  - **Default:** `true`
+
+### Gunicorn-specific environment variables
+
+- **`SS_GUNICORN_USER`**:
+  - **Description:** OS user for gunicorn worker processes to run as. See [USER].
+  - **Type:** `integer` (user id) or `string` (user name)
+  - **Default:** `archivematica`
+
+- **`SS_GUNICORN_GROUP`**:
+  - **Description:** OS group for gunicorn worker processes to run as. See [GROUP].
+  - **Type:** `integer` (group id) or `string` (group name)
+  - **Default:** `archivematica`
+
+- **`SS_GUNICORN_BIND`**:
+  - **Description:** the socket for gunicorn to bind to. See [BIND].
+  - **Type:** `string` (host name or ip with port number)
+  - **Default:** `127.0.0.1:8001`
+
+- **`SS_GUNICORN_WORKERS`**:
+  - **Description:** number of gunicorn worker processes to run. See [WORKERS].
+    If `SS_GUNICORN_WORKER_CLASS` is set to `gevent`, then `SS_BAG_VALIDATION_NO_PROCESSES`
+    **must** be set to `1`. Otherwise reingest will fail at bagit validate. See
+    [#708].
+  - **Type:** `integer`
+  - **Default:** `1`
+
+- **`SS_GUNICORN_WORKER_CLASS`**:
+  - **Description:** the type of worker processes to run. See [WORKER-CLASS].
+  - **Type:** `string`
+  - **Default:** `gevent`
+
+- **`SS_GUNICORN_TIMEOUT`**:
+  - **Description:** worker process timeout. See [TIMEOUT].
+  - **Type:** `integer` (seconds)
+  - **Default:** `172800`
+
+- **`SS_GUNICORN_RELOAD`**:
+  - **Description:** restart workers when code changes. See [RELOAD].
+  - **Type:** `boolean`
+  - **Default:** `false`
+
+- **`SS_GUNICORN_RELOAD_ENGINE`**:
+  - **Description:** method of performing reload. See [RELOAD-ENGINE].
+  - **Type:** `string`
+  - **Default:** `auto`
+
+- **`SS_GUNICORN_CHDIR`**:
+  - **Description:** directory to load apps from. See [CHDIR]. If this is
+    empty, Archivematica will load apps from the top level directory of the
+    `archivematica.storage_service` package.
+  - **Type:** `string`
+  - **Default:** `""`
+
+- **`SS_GUNICORN_ACCESSLOG`**:
+  - **Description:** location to write access log to. See [ACCESSLOG].
+  - **Type:** `string`
+  - **Default:** `/dev/null`
+
+- **`SS_GUNICORN_ERRORLOG`**:
+  - **Description:** location to write error log to. See [ERRORLOG].
+  - **Type:** `string`
+  - **Default:** `-`
+
+- **`SS_GUNICORN_LOGLEVEL`**:
+  - **Description:** the granularity of Error log outputs. See [LOGLEVEL].
+  - **Type:** `string`
+  - **Default:** `INFO`
+
+- **`SS_GUNICORN_PROC_NAME`**:
+  - **Description:** name for this instance of gunicorn. See [PROC-NAME].
+  - **Type:** `string`
+  - **Default:** `archivematica-storage-service`
+
+### LDAP-specific environment variables
+
+These variables specify the behaviour of LDAP authentication. If
+`SS_LDAP_AUTHENTICATION` is false, none of the other ones are used.
+
+- **`SS_LDAP_AUTHENTICATION`**:
+  - **Description:** Enables user authentication via LDAP.
+  - **Type:** `boolean`
+  - **Default:** `false`
+
+- **`AUTH_LDAP_SERVER_URI`**:
+  - **Description:** Address of the LDAP server to authenticate against.
+  - **Type:** `string`
+  - **Default:** `ldap://localhost`
+
+- **`AUTH_LDAP_BIND_DN`**:
+  - **Description:** LDAP "bind DN"; the object to authenticate against the LDAP
+    server with, in order to lookup users, e.g. "cn=admin,dc=example,dc=com".
+    Empty string for anonymous.
+  - **Type:** `string`
+  - **Default:** `''`
+
+- **`AUTH_LDAP_BIND_PASSWORD`**:
+  - **Description:** Password for the LDAP bind DN.
+  - **Type:** `string`
+  - **Default:** `''`
+
+- **`AUTH_LDAP_USER_SEARCH_BASE_DN`**:
+  - **Description:** Base LDAP DN for user search, e.g. "ou=users,dc=example,dc=com".
+  - **Type:** `string`
+  - **Default:** `''`
+
+- **`AUTH_LDAP_USER_SEARCH_BASE_FILTERSTR`**:
+  - **Description:** Filter for identifying LDAP user objects, e.g. "(uid=%(user)s)".
+    The `%(user)s` portion of the string will be replaced by the username. This
+    variable is only used if `AUTH_LDAP_USER_SEARCH_BASE_DN` is not empty.
+  - **Type:** `string`
+  - **Default:** `(uid=%(user)s)`
+
+- **`AUTH_LDAP_USER_DN_TEMPLATE`**:
+  - **Description:** Template for LDAP user search, e.g. "uid=%(user)s,ou=users,dc=example,dc=com".
+    Not applicable if `AUTH_LDAP_USER_SEARCH_BASE_DN` is set.
+  - **Type:** `string`
+  - **Default:** `''`
+
+- **`AUTH_LDAP_GROUP_IS_ACTIVE`**:
+  - **Description:** Template for LDAP group used to set the Django user
+    `is_active` flag, e.g. "cn=active,ou=django,ou=groups,dc=example,dc=com".
+  - **Type:** `string`
+  - **Default:** `''`
+
+- **`AUTH_LDAP_GROUP_IS_STAFF`**:
+  - **Description:** Template for LDAP group used to set the Django user
+    `is_staff` flag, e.g. "cn=staff,ou=django,ou=groups,dc=example,dc=com".
+  - **Type:** `string`
+  - **Default:** `''`
+
+- **`AUTH_LDAP_GROUP_IS_SUPERUSER`**:
+  - **Description:** Template for LDAP group used to set the Django user
+    `is_superuser` flag, e.g. "cn=admins,ou=django,ou=groups,dc=example,dc=com".
+  - **Type:** `string`
+  - **Default:** `''`
+
+- **`AUTH_LDAP_GROUP_TYPE`**:
+  - **Description:** An LDAPGroupType instance describing the type of group
+    returned by AUTH_LDAP_GROUP_SEARCH. See [available values], e.g.
+    "PosixGroupType".
+  - **Type:** `string`
+  - **Default:** `ActiveDirectoryGroupType`
+
+- **`AUTH_LDAP_GROUP_SEARCH_BASE_DN`**:
+  - **Description:** Base LDAP DN for group search, e.g. "ou=django,ou=groups,dc=example,dc=com".
+  - **Type:** `string`
+  - **Default:** `''`
+
+- **`AUTH_LDAP_GROUP_SEARCH_FILTERSTR`**:
+  - **Description:** Filter for identifying LDAP group objects, e.g.
+    "(objectClass=groupOfNames)". This variable is only used if
+    `AUTH_LDAP_GROUP_SEARCH_BASE_DN` is not empty.
+  - **Type:** `string`
+  - **Default:** `''`
+
+- **`AUTH_LDAP_REQUIRE_GROUP`**:
+  - **Description:** Filter for a group that LDAP users must belong to in order
+    to authenticate, e.g. "cn=enabled,ou=django,ou=groups,dc=example,dc=com"
+  - **Type:** `string`
+  - **Default:** `''`
+
+- **`AUTH_LDAP_DENY_GROUP`**:
+  - **Description:** Filter for a group that LDAP users must _not_ belong to in
+    order to authenticate, e.g. "cn=disabled,ou=django,ou=groups,dc=example,dc=com".
+  - **Type:** `string`
+  - **Default:** `''`
+
+- **`AUTH_LDAP_FIND_GROUP_PERMS`**:
+  - **Description:** If we should use LDAP group membership to calculate group permissions.
+  - **Type:** `boolean`
+  - **Default:** `false`
+
+- **`AUTH_LDAP_CACHE_GROUPS`**:
+  - **Description:** If we should cache groups to minimize LDAP traffic.
+  - **Type:** `boolean`
+  - **Default:** `false`
+
+- **`AUTH_LDAP_GROUP_CACHE_TIMEOUT`**:
+  - **Description:** How long we should cache LDAP groups for (in seconds). Only
+    applies if
+    `AUTH_LDAP_CACHE_GROUPS` is true.
+  - **Type:** `integer`
+  - **Default:** `3600`
+
+- **`AUTH_LDAP_START_TLS`**:
+  - **Description:** Determines if we update to a secure LDAP connection using
+    StartTLS after connecting.
+  - **Type:** `boolean`
+  - **Default:** `true`
+
+- **`AUTH_LDAP_PROTOCOL_VERSION`**:
+  - **Description:** If set, forces LDAP protocol version 3.
+  - **Type:** `integer`
+  - **Default:** `''`
+
+- **`AUTH_LDAP_TLS_CACERTFILE`**:
+  - **Description:** Path to a custom LDAP certificate authority file.
+  - **Type:** `string`
+  - **Default:** `''`
+
+- **`AUTH_LDAP_TLS_CERTFILE`**:
+  - **Description:** Path to a custom LDAP certificate file.
+  - **Type:** `string`
+  - **Default:** `''`
+
+- **`AUTH_LDAP_TLS_KEYFILE`**:
+  - **Description:** Path to a custom LDAP key file (matching the cert given in
+    `AUTH_LDAP_TLS_CERTFILE`).
+  - **Type:** `string`
+  - **Default:** `''`
+
+- **`AUTH_LDAP_TLS_REQUIRE_CERT`**:
+  - **Description:** How strict to be regarding TLS cerfiticate verification.
+    Allowed values are "never", "allow", "try", "demand", or "hard". Corresponds
+    to the TLSVerifyClient OpenLDAP setting.
+  - **Type:** `string`
+  - **Default:** `''`
+
+- **`AUTH_LDAP_ADMIN_GROUP`**:
+  - **Description:** Members of this LDAP group authenticate as administrators.
+  - **Type:** `string`
+  - **Default:** `'Administrators'`
+
+- **`AUTH_LDAP_MANAGER_GROUP`**: Members of this LDAP group authenticate as managers.
+  - **Type:** `string`
+  - **Default:** `'Managers'`
+
+- **`AUTH_LDAP_REVIEWER_GROUP`**: Members of this LDAP group authenticate as reviewers.
+  - **Type:** `string`
+  - **Default:** `'Reviewers'`
+
+### CAS-specific environment variables
+
+These variables specify the behaviour of CAS authentication. If
+`SS_CAS_AUTHENTICATION` is false, none of the other ones are used.
+
+- **`AUTH_CAS_SERVER_URL`**:
+  - **Description:** Address of the CAS server to authenticate against. Defaults
+    to CAS demo server.
+  - **Type:** `string`
+  - **Default:** `https://django-cas-ng-demo-server.herokuapp.com/cas/`
+
+- **`AUTH_CAS_PROTOCOL_VERSION`**:
+  - **Description:** Version of CAS protocol to use. Allowed values are "1",
+    "2", "3", or "CAS_2_SAML_1_0".
+  - **Type:** `string`
+  - **Default:** `3`
+
+- **`AUTH_CAS_CHECK_ADMIN_ATTRIBUTES`**:
+  - **Description:** Determines if we check user attributes returned by CAS
+    server to determine if user is an administrator.
+  - **Type:** `boolean`
+  - **Default:** `false`
+
+- **`AUTH_CAS_ADMIN_ATTRIBUTE`**:
+  - **Description:** Name of attribute to check for administrator status, if
+    `CAS_CHECK_ADMIN_ATTRIBUTES` is True.
+  - **Type:** `string`
+  - **Default:** `None`
+
+- **`AUTH_CAS_ADMIN_ATTRIBUTE_VALUE`**:
+  - **Description:** Value in `CAS_ADMIN_ATTRIBUTE` that indicates user is an
+    administrator, if `CAS_CHECK_ADMIN_ATTRIBUTES` is True.
+  - **Type:** `string`
+  - **Default:** `None`
+
+- **`AUTH_CAS_AUTOCONFIGURE_EMAIL`**:
+  - **Description:** Determines if we auto-configure an email address for new
+    users by following the rule username@domain.
+  - **Type:** `boolean`
+  - **Default:** `false`
+
+- **`AUTH_CAS_EMAIL_DOMAIN`**:
+  - **Description:** Domain to use for auto-configured email addresses, if
+    `AUTH_CAS_AUTOCONFIGURE_EMAIL` is True.
+  - **Type:** `string`
+  - **Default:** `None`
+
+### OIDC-specific environment variables
+
+**OIDC support is experimental, please share your feedback!**
+
+These variables specify the behaviour of OpenID Connect (OIDC) authentication.
+If `SS_OIDC_AUTHENTICATION` is false, none of the other ones are used.
+
+Automatic local user creation for OIDC logins is controlled by
+`SS_OIDC_AUTO_CREATE_USER`.
+
+- **`SS_OIDC_AUTHENTICATION`**:
+  - **Description:** Enables user authentication via OIDC.
+  - **Type:** `boolean`
+  - **Default:** `false`
+
+- **`SS_OIDC_ALLOW_LOCAL_AUTHENTICATION`**:
+  - **Description:** Allows local authentication and authentication via OIDC.
+  - **Type:** `boolean`
+  - **Default:** `true`
+
+- **`SS_OIDC_AUTO_CREATE_USER`**:
+  - **Description:** enables automatic local user creation for successful OIDC
+    logins when no matching Storage Service user already exists.
+  - **Type:** `boolean`
+  - **Default:** `true`
+
+- **`SS_OIDC_USE_SESSION_REFRESH_MIDDLEWARE`**:
+  - **Description:** Allows existing sessions to be refreshed when OIDC tokens expire
+  - **Type:** `boolean`
+  - **Default:** `false`
+
+- **`SS_OIDC_RENEW_ID_TOKEN_EXPIRY_SECONDS`**:
+  - **Description:** Time in seconds before reauthentication is required to
+    refresh the ID token. Should align with the token lifetime set by your OIDC
+    Provider.
+  - **Type:** `integer`
+  - **Default:** `900`
+
+- **`OIDC_RP_CLIENT_ID`**:
+  - **Description:** OIDC client ID
+  - **Type:** `string`
+  - **Default:** `''`
+
+- **`OIDC_RP_CLIENT_SECRET`**:
+  - **Description:** OIDC client secret
+  - **Type:** `string`
+  - **Default:** `''`
+
+- **`AZURE_TENANT_ID`**:
+  - **Description:** Azure Active Directory Tenant ID - if this is provided, the
+    endpoint URLs will be automatically generated from this.
+  - **Type:** `string`
+  - **Default:** `''`
+
+- **`OIDC_OP_AUTHORIZATION_ENDPOINT`**:
+  - **Description:** URL of OIDC provider authorization endpoint
+  - **Type:** `string`
+  - **Default:** `''`
+
+- **`OIDC_OP_TOKEN_ENDPOINT`**:
+  - **Description:** URL of OIDC provider token endpoint
+  - **Type:** `string`
+  - **Default:** `''`
+
+- **`OIDC_OP_USER_ENDPOINT`**:
+  - **Description:** URL of OIDC provider userinfo endpoint
+  - **Type:** `string`
+  - **Default:** `''`
+
+- **`OIDC_OP_JWKS_ENDPOINT`**:
+  - **Description:** URL of OIDC provider JWKS endpoint
+  - **Type:** `string`
+  - **Default:** `''`
+
+- **`OIDC_OP_SET_ROLES_FROM_CLAIMS`**:
+  - **Description:** Set user roles from OIDC token claims
+  - **Type:** `boolean`
+  - **Default:** `False`
+
+- **`OIDC_OP_ROLE_CLAIM_PATH`**:
+  - **Description:** Set OIDC token path for extracting role info
+  - **Type:** `string`
+  - **Default:** `'realm_access.roles'`
+
+- **`OIDC_ACCESS_ATTRIBUTE_MAP`**
+  - **Description:** Set OIDC token details to extract. This string should be
+    JSON-decodable.  If `OIDC_OP_SET_ROLES_FROM_CLAIMS` is set to `True` then
+    the entry `"realm_access": "realm_access"` must be included in this setting.
+  - **Type:** `string`
+  - **Default:** `{"given_name": "first_name", "family_name": "last_name"}`
+
+- **`OIDC_ROLE_CLAIM_ADMIN`**:
+  - **Description:** The OIDC role claim value which maps to the Admin role.
+  - **Type:** `string`
+  - **Default:** `admin`
+
+- **`OIDC_ROLE_CLAIM_MANAGER`**:
+  - **Description:** The OIDC role claim value which maps to the Manager role.
+  - **Type:** `string`
+  - **Default:** `manager`
+
+- **`OIDC_ROLE_CLAIM_REVIEWER`**:
+  - **Description:** The OIDC role claim value which maps to the Reviewer role.
+  - **Type:** `string`
+  - **Default:** `reviewer`
+
+- **`OIDC_ROLE_CLAIM_READER`**:
+  - **Description:** The OIDC role claim value which maps to the Reader role.
+  - **Type:** `string`
+  - **Default:** `reader`
+
+- **`OIDC_RP_SIGN_ALGO`**:
+  - **Description:** Algorithm used by the ID provider to sign ID tokens
+  - **Type:** `string`
+  - **Default:** `HS256`
+
+- **`OIDC_USE_PKCE`**:
+  - **Description:** Controls whether the authentication backend uses PKCE
+(Proof Key For Code Exchange) during the authorization code flow.
+  - **Type:** `boolean`
+  - **Default:** `false`
+
+- **`OIDC_CODE_CHALLENGE_METHOD`**:
+  - **Description:** Sets the method used to generate the PKCE code challenge.
+This only has an effect if ``OIDC_USE_PKCE`` is ``True``.
+  - **Type:** `string`
+  - **Default:** `S256`
+
+### AWS-specific environment variables
+
+These variables can be set to allow AWS authentication for S3 storage spaces as
+an alternative to providing these details via the user interface. See
+[AWS CLI Environment Variables] for details.
+
+- **`AWS_ACCESS_KEY_ID`**:
+  - **Description:** Access key for AWS authentication
+  - **Type:** `string`
+  - **Default:** `''`
+
+- **`AWS_SECRET_ACCESS_KEY`**:
+  - **Description:** Secret key associated with the access key
+  - **Type:** `string`
+  - **Default:** `''`
+
+### CSP-specific environment variables
+
+**CSP support is experimental, please share your feedback!**
+
+These variables specify the behaviour of the Content Security Policy (CSP)
+headers. Only applicable if `SS_CSP_ENABLED` is set.
+
+- **`CSP_SETTINGS_FILE`**:
+  - **Description:** Path to a Python module with overrides of the
+    [django-csp policy settings]. An `ImproperlyConfigured` exception will be
+    raised if the Python module cannot be imported.
+  - **Type:** `string`
+  - **Default:** ``
+
+## Logging configuration
+
+Logging configuration defaults for all logs to using `stdout` and `stderr`
+unless they are configured to do otherwise. If there are no changes to the
+default configuration they will be handled by whichever process is managing
+Archivematica's services. For example, on Ubuntu 16.04, Ubuntu 18.04 or
+CentOS 7, Archivematica's processes are managed by `systemd`. Logs for the
+Storage Service can be accessed using `sudo journalctl -u archivematica-storage
+-service`.
+
+When running Archivematica using docker, `docker compose logs` commands can be
+used to access the logs from different containers, e.g. `docker compose logs
+-f archivematica-storage-service`.
+
+### Overriding the logging configuration
+
+Via the Django configuration settings, i.e. [base.py][django-config], the
+storage service will look for a file in `/etc/archivematica/` called
+`storageService.logging.json`. If this file is found it can be used to override
+the default logging behavior.
+
+The [`storageService.logging.json`](./storageService.logging.json) file found
+in this installation directory provides an example that is configured to output
+to a logs directory: `/var/log/archivematica/storage-service`, i.e.
+`/var/log/archivematica/storage-service/storage_service.log`.
+
+### Increase or decrease the logging output
+
+Archivematica uses Python's standard approach to logging. There is a hierarchy
+of logging levels, at each level, more or less output can be configured. The
+values run from DEBUG (verbose) to CRITICAL (less verbose) as follows:
+
+- DEBUG.
+- INFO.
+- WARNING.
+- ERROR.
+- CRITICAL.
+
+The [Python documentation][python-docs] provides greater explanation.
+
+Though best efforts are taken to include the most useful information for
+debugging as possible your mileage may vary in debugging Archivematica or the
+Storage Service depending on the way the developer has written any particular
+module.
+
+This is largely the same with external libraries, however, increasing their
+logging level can make available more information that isn't output by choice
+in the storage service's modules. Take for example the S3 Boto3 adapter.
+Logging can be changed from INFO to DEBUG to reveal more detailed information
+about a file transfer:
+
+```js
+    "boto3": {"level": "INFO"}, // becomes "boto3.*": {"level": "DEBUG"},
+    "botocore": {"level": "INFO"} // becomes "botocore.*": {"level": "DEBUG"}
+```
+
+Debug logging should never be used on a production server without the full
+implications being understood. The Boto3 developers, for example, ask users
+to [heed their warning][boto3]:
+
+> Warning: Be aware that when logging anything from 'botocore' the full wire
+trace will appear in your logs. If your payloads contain sensitive data this
+should not be used in production.
+
+More information can be configured in Archivematica's Storage Service logging
+for additional Django web-framework components, SWORD2, and Boto3 which is used
+to manage data transfer and communication between the Storage Service and S3.
+
+New [issues][gh-issues] or pull-requests can be submitted in support of
+additional logging wherever it is needed by maintainers of Archivematica's
+services.
+
+[python-docs]: https://docs.python.org/3/howto/logging.html#when-to-use-logging
+[boto3]: https://boto3.amazonaws.com/v1/documentation/api/latest/reference/core/boto3.html#boto3.set_stream
+[django-config]: https://github.com/artefactual/archivematica-storage-service/blob/1adaea28b8853308b8220c493d836eb9d50eb975/storage_service/storage_service/settings/base.py
+[gh-issues]: https://github.com/archivematica/issues
+[settings module]: https://docs.djangoproject.com/en/1.8/ref/settings/#settings
+[SECRET_KEY]: https://docs.djangoproject.com/en/1.8/ref/settings/#secret-key
+[ALLOWED_HOSTS]: https://docs.djangoproject.com/en/1.8/ref/settings/#allowed-hosts
+[TIME_ZONE]: https://docs.djangoproject.com/en/1.8/ref/settings/#time-zone
+[#708]: https://github.com/artefactual/archivematica/issues/708
+[Control Security Policy]: https://developer.mozilla.org/en-US/docs/Web/HTTP/CSP
+[dj-database-url docs]: https://github.com/kennethreitz/dj-database-url#url-schema
+[engine]: https://docs.djangoproject.com/en/1.8/ref/settings/#engine
+[DB_NAME]: https://docs.djangoproject.com/en/1.8/ref/settings/#name
+[DB_PASSWORD]: https://docs.djangoproject.com/en/1.8/ref/settings/#password
+[DB_HOST]: https://docs.djangoproject.com/en/1.8/ref/settings/#host
+[#813]: https://github.com/artefactual/archivematica/pull/813
+[USER]: http://docs.gunicorn.org/en/stable/settings.html#user
+[GROUP]: http://docs.gunicorn.org/en/stable/settings.html#group
+[BIND]: http://docs.gunicorn.org/en/stable/settings.html#bind
+[WORKERS]: http://docs.gunicorn.org/en/stable/settings.html#workers
+[WORKER-CLASS]: http://docs.gunicorn.org/en/stable/settings.html#worker-class
+[TIMEOUT]: http://docs.gunicorn.org/en/stable/settings.html#timeout
+[RELOAD]: http://docs.gunicorn.org/en/stable/settings.html#reload
+[RELOAD-ENGINE]: http://docs.gunicorn.org/en/stable/settings.html#reload-engine
+[CHDIR]: http://docs.gunicorn.org/en/stable/settings.html#chdir
+[ACCESSLOG]: http://docs.gunicorn.org/en/stable/settings.html#accesslog
+[ERRORLOG]: http://docs.gunicorn.org/en/stable/settings.html#errorlog
+[LOGLEVEL]: http://docs.gunicorn.org/en/stable/settings.html#loglevel
+[PROC-NAME]: http://docs.gunicorn.org/en/stable/settings.html#proc-name
+[available values]: https://django-auth-ldap.readthedocs.io/en/latest/groups.html
+[AWS CLI Environment Variables]: https://docs.aws.amazon.com/cli/latest/userguide/cli-configure-envvars.html
+[django-csp policy settings]: https://django-csp.readthedocs.io/en/latest/configuration.html#policy-settings

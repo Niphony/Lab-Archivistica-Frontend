@@ -1,0 +1,15 @@
+{% extends "administration/base.html" %}
+{% load i18n %}
+
+{% block page_title %}{% trans "Users" %}{% endblock %}
+
+{% block content %}
+
+  {% if perms.auth.add_user and allow_user_edits %}
+    <p><a href="{% url 'administration:user_create' %}">{% trans "Create New User" %}</a></p>
+  {% endif %}
+  <div
+    data-table-root
+    data-table-script-id="tables-users-table-payload"></div>
+  {{ users_table_payload|json_script:"tables-users-table-payload" }}
+{% endblock %}

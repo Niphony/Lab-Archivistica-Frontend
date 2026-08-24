@@ -1,0 +1,30 @@
+*.py[co]
+*.mo
+
+# IDE specific
+.idea
+*.directory
+.project
+.pydevproject
+.settings
+.vscode
+*.sublime-project
+*.sublime-workspace
+*.sw[po]
+*~
+
+# coverage data file
+.coverage
+
+# pytest's working directory
+.cache
+
+# tox working directory
+.tox/
+.venv/
+
+# frontend builds
+src/archivematica/dashboard/static/
+
+# setuptools build
+**/*.egg-info

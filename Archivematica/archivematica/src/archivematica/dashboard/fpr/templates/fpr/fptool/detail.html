@@ -1,0 +1,40 @@
+{% extends "fpr/app_layout.html" %}
+{% load i18n %}
+
+{% block title %}{{ block.super }} - {% blocktrans with description=fptool.description  %}Format policy registry tool {{ description }} {% endblocktrans %}{% endblock title %}
+{% block page_title %}{% blocktrans with description=fptool.description  %}Format policy registry tool {{ description }} {% endblocktrans %}{% endblock page_title %}
+
+{% block breadcrumbs %}
+{{ block.super }}
+<li><a href="{% url 'fpr:fptool_list' %}">{% trans "Format policy registry tools" %}</a></li>
+<li>{{ fptool.description }}</li>
+{% endblock breadcrumbs %}
+
+{% block app_content %}
+
+
+    <div class='format'>
+      <dl>
+        <dt>{% trans "UUID" %}</dt>
+        <dd>{{ fptool.uuid }}</dd>
+        <dt>{% trans "Description" %}</dt>
+        <dd>{{ fptool.description }}</dd>
+        <dt>{% trans "Enabled" %}</dt>
+        <dd>{{ fptool.enabled|yesno:_('Yes,No') }}</dd>
+      </dl>
+    </div>
+    {% if request.user.is_superuser %}
+      <div class="well well-sm">
+        <a class="btn btn-default btn-sm" href="{% url 'fpr:fptool_edit' fptool.slug %}">{% trans "Edit" %}</a>
+      </div>
+    {% endif %}
+
+    <h3>{% trans "Tool commands" %}</h3>
+
+    <div
+      class="fpr-vue-table"
+      data-fpr-table-root
+      data-fpr-table-script-id="fpr-fptool-detail-commands-payload"></div>
+    {{ fpr_table_payload|json_script:"fpr-fptool-detail-commands-payload" }}
+
+{% endblock app_content %}

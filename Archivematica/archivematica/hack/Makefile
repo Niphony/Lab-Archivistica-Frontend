@@ -1,0 +1,458 @@
+.DEFAULT_GOAL := help
+
+# Paths for Docker named volumes
+AM_PIPELINE_DATA ?= $(HOME)/.am/am-pipeline-data
+SS_LOCATION_DATA ?= $(HOME)/.am/ss-location-data
+
+CALLER_UID=$(shell id -u)
+CALLER_GID=$(shell id -g)
+
+SRCDIR := $(abspath $(dir $(lastword $(MAKEFILE_LIST)))/../src)
+
+NULL :=
+SPACE := $(NULL) $(NULL)
+COMMA := ,
+
+define compose_all
+	docker compose -f docker-compose.yml -f docker-compose.acceptance-tests.yml -f docker-compose.pmm.yml $(1)
+endef
+
+define compose_amauat
+	docker compose -f docker-compose.yml -f docker-compose.acceptance-tests.yml $(1)
+endef
+
+define compose_tests
+	docker compose -f docker-compose.yml -f docker-compose.tests.yml $(1)
+endef
+
+define run_toxenv
+	$(call compose_tests, \
+		run \
+			-e DJANGO_SETTINGS_MODULE=$(2) \
+			-e PYTEST_ADDOPTS=$(subst $(SPACE),\$(SPACE),${PYTEST_ADDOPTS}) \
+			--user $(CALLER_UID):$(CALLER_GID) \
+			--workdir /src \
+			--rm \
+			--entrypoint tox \
+				archivematica-tests \
+					-e $(subst $(SPACE),$(COMMA),$(strip $(1))) \
+					${TOXARGS})
+endef
+
+start-mysql: test-build
+	$(call compose_tests, \
+		run \
+			--user $(CALLER_UID):$(CALLER_GID) \
+			--rm \
+			--entrypoint bash \
+				archivematica-tests \
+					/src/hack/wait-for-it.sh mysql:3306 --timeout=30)
+
+define create_db
+	docker compose exec -T mysql mysql -hlocalhost -uroot -p12345 -e '\
+		DROP DATABASE IF EXISTS `$(1)`; \
+		CREATE DATABASE `$(1)`;'
+	$(call grant_all_on_db,$(1))
+endef
+
+define grant_all_on_db
+	docker compose exec -T mysql mysql -hlocalhost -uroot -p12345 -e '\
+		GRANT ALL ON `$(1)`.* TO "archivematica"@"%";'
+endef
+
+define drop_db
+	docker compose exec -T mysql mysql -hlocalhost -uroot -p12345 -e 'DROP DATABASE IF EXISTS `$(1)`;'
+endef
+
+define create_dbs
+	$(foreach test_db,$(1),$(call create_db,$(test_db));)
+endef
+
+define grant_all_on_dbs
+	$(foreach test_db,$(1),$(call grant_all_on_db,$(test_db));)
+endef
+
+create-volumes:  ## Create external data volumes.
+	mkdir -p ${AM_PIPELINE_DATA}
+	docker volume create \
+		--opt type=none \
+		--opt o=bind \
+		--opt device=$(AM_PIPELINE_DATA) \
+			am-pipeline-data
+	mkdir -p ${SS_LOCATION_DATA}
+	docker volume create \
+		--opt type=none \
+		--opt o=bind \
+		--opt device=$(SS_LOCATION_DATA) \
+			ss-location-data
+	# This workaround prevents Docker from creating this directory structure
+	# inside the external SS_LOCATION_DATA volume directory assigning root as
+	# the owner of some parts of it.
+	mkdir -p $(SS_LOCATION_DATA)/archivematica/archivematica-sampledata
+
+build:  # Build Compose services.
+	docker compose build \
+		--build-arg USER_ID=$(CALLER_UID) \
+		--build-arg GROUP_ID=$(CALLER_GID)
+
+build-dashboard:  # Build Compose services.
+	docker compose build \
+		--build-arg USER_ID=$(CALLER_UID) \
+		--build-arg GROUP_ID=$(CALLER_GID)
+
+bootstrap: bootstrap-storage-service bootstrap-dashboard-db bootstrap-frontend  ## Full bootstrap.
+
+bootstrap-storage-service:  ## Bootstrap Storage Service (new database).
+	$(call create_db,SS)
+	docker compose run \
+		--rm \
+		--no-deps \
+		--entrypoint /src/src/archivematica/storage_service/manage.py \
+			archivematica-storage-service \
+				migrate --noinput
+	docker compose run \
+		--rm \
+		--no-deps \
+		--entrypoint /src/src/archivematica/storage_service/manage.py \
+			archivematica-storage-service \
+				create_user \
+					--username="test" \
+					--password="test" \
+					--email="test@test.com" \
+					--api-key="test" \
+					--superuser
+	# SS needs to be restarted so the local space is created.
+	# See #303 (https://git.io/vNKlM) for more details.
+	docker compose restart --no-deps archivematica-storage-service
+
+makemigrations-ss:
+	docker compose run \
+		--user $(CALLER_UID):$(CALLER_GID) \
+		--rm \
+		--no-deps \
+		--entrypoint /src/src/archivematica/storage_service/manage.py \
+			archivematica-storage-service \
+				makemigrations
+
+manage-dashboard:  ## Run Django /manage.py on Dashboard, suppling <command> [options] as value to ARG, e.g., `make manage-ss ARG=shell`
+	docker compose run \
+		--user $(CALLER_UID):$(CALLER_GID) \
+		--rm \
+		--no-deps \
+		--entrypoint /src/src/archivematica/dashboard/manage.py \
+			archivematica-dashboard \
+				$(ARG)
+
+manage-dashboard-quick-collectstatic:  ## Collect the static files of the Archivematica Dashboard.
+	$(MAKE) manage-dashboard ARG="collectstatic --verbosity=3 --noinput --clear --skip-checks --link --no-post-process"
+
+manage-ss:  ## Run Django /manage.py on Storage Service, suppling <command> [options] as value to ARG, e.g., `make manage-ss ARG='shell --help'`
+	docker compose run \
+		--user $(CALLER_UID):$(CALLER_GID) \
+		--rm \
+		--no-deps \
+		--entrypoint /src/src/archivematica/storage_service/manage.py \
+			archivematica-storage-service \
+				$(ARG)
+
+bootstrap-dashboard-db:  ## Bootstrap Dashboard (new database).
+	$(call create_db,MCP)
+	docker compose run \
+		--rm \
+		--no-deps \
+		--entrypoint /src/src/archivematica/dashboard/manage.py \
+			archivematica-dashboard \
+				migrate --noinput
+	docker compose run \
+		--rm \
+		--no-deps \
+		--entrypoint /src/src/archivematica/dashboard/manage.py \
+			archivematica-dashboard \
+				install \
+					--username="test" \
+					--password="test" \
+					--email="test@test.com" \
+					--org-name="test" \
+					--org-id="test" \
+					--api-key="test" \
+					--ss-url="http://archivematica-storage-service:8000" \
+					--ss-user="test" \
+					--ss-api-key="test" \
+					--site-url="http://archivematica-dashboard:8000"
+
+bootstrap-dashboard-frontend:  ## Build front-end assets.
+	docker build \
+		-t archivematica-dashboard-frontend-builder \
+		-f $(CURDIR)/Dockerfile \
+		--build-arg TARGET=archivematica-dashboard-frontend-builder \
+		--build-arg USER_ID=$(CALLER_UID) \
+		--build-arg GROUP_ID=$(CALLER_GID) \
+			../
+	docker run \
+		-e HOME=/tmp/npm-config \
+		--rm \
+		--user $(CALLER_UID):$(CALLER_GID) \
+		--volume "$(SRCDIR)/archivematica/dashboard:/src/src/archivematica/dashboard" \
+		--volume "archivematica_dashboard_frontend_node_modules:/src/src/archivematica/dashboard/frontend/node_modules" \
+		--entrypoint npm \
+			archivematica-dashboard-frontend-builder \
+				clean-install
+	docker run \
+		-e HOME=/tmp/npm-config \
+		--rm \
+		--user $(CALLER_UID):$(CALLER_GID) \
+		--volume "$(SRCDIR)/archivematica/dashboard:/src/src/archivematica/dashboard" \
+		--volume "archivematica_dashboard_frontend_node_modules:/src/src/archivematica/dashboard/frontend/node_modules" \
+		--entrypoint npm \
+			archivematica-dashboard-frontend-builder \
+				run build
+
+bootstrap-storage-service-frontend:  ## Build Storage Service front-end assets.
+	docker build \
+		-t archivematica-storage-service-frontend-builder \
+		-f $(CURDIR)/submodules/archivematica-storage-service/Dockerfile \
+		--build-arg TARGET=archivematica-storage-service-frontend-builder \
+		--build-arg USER_ID=$(CALLER_UID) \
+		--build-arg GROUP_ID=$(CALLER_GID) \
+			$(CURDIR)/submodules/archivematica-storage-service
+	docker run \
+		-e HOME=/tmp/npm-config \
+		--rm \
+		--user $(CALLER_UID):$(CALLER_GID) \
+		--volume "$(CURDIR)/submodules/archivematica-storage-service/src/archivematica/storage_service:/src/src/archivematica/storage_service" \
+		--volume "archivematica_storage_service_frontend_node_modules:/src/src/archivematica/storage_service/frontend/node_modules" \
+		--entrypoint npm \
+			archivematica-storage-service-frontend-builder \
+				clean-install
+
+bootstrap-frontend: bootstrap-dashboard-frontend bootstrap-storage-service-frontend  ## Build all front-end assets.
+
+restart-am-services:  ## Restart Archivematica services: MCPServer, MCPClient, Dashboard and Storage Service.
+	docker compose restart --no-deps archivematica-mcp-server
+	docker compose restart --no-deps archivematica-mcp-client
+	docker compose restart --no-deps archivematica-dashboard
+	docker compose restart --no-deps archivematica-storage-service
+
+# Lock resolution needs the Python and Git tools included in this uv image.
+UV_IMAGE ?= ghcr.io/astral-sh/uv:0.11.30-python3.14-trixie@sha256:bf3b8020dab9acd0a9c2cb0ea4ab5c65167f2a1af513c6031f289ac268b3dd4f
+
+define am_uv
+	docker run \
+		--rm \
+		--user $(CALLER_UID):$(CALLER_GID) \
+		--volume "$(CURDIR)/..:/src" \
+		--workdir /src \
+		-e UV_CACHE_DIR=/tmp/uv-cache \
+		-e UV_PROJECT_ENVIRONMENT=/tmp/uv-project-environment \
+		-e UV_PYTHON=python \
+		-e UV_PYTHON_DOWNLOADS=never \
+		$(UV_IMAGE) \
+			uv $(1)
+endef
+
+lock-dependencies-am:  ## Refresh the Archivematica uv lockfile
+	$(call am_uv,lock)
+
+upgrade-dependencies-am:  ## Upgrade the Archivematica uv lockfile
+	$(call am_uv,lock --upgrade)
+
+define ss_uv
+	docker run \
+		--rm \
+		--user $(CALLER_UID):$(CALLER_GID) \
+		--volume "$(CURDIR)/submodules/archivematica-storage-service:/src" \
+		--workdir /src \
+		-e UV_CACHE_DIR=/tmp/uv-cache \
+		-e UV_PROJECT_ENVIRONMENT=/tmp/uv-project-environment \
+		-e UV_PYTHON=python \
+		-e UV_PYTHON_DOWNLOADS=never \
+		$(UV_IMAGE) \
+			uv $(1)
+endef
+
+lock-dependencies-ss:  ## Refresh the Storage Service uv lockfile
+	$(call ss_uv,lock)
+
+upgrade-dependencies-ss:  ## Upgrade the Storage Service uv lockfile
+	$(call ss_uv,lock --upgrade)
+
+define amauat_uv
+	docker run \
+		--rm \
+		--user $(CALLER_UID):$(CALLER_GID) \
+		--volume "$(CURDIR)/submodules/archivematica-acceptance-tests:/src" \
+		--workdir /src \
+		-e UV_CACHE_DIR=/tmp/uv-cache \
+		-e UV_PROJECT_ENVIRONMENT=/tmp/uv-project-environment \
+		-e UV_PYTHON=python \
+		-e UV_PYTHON_DOWNLOADS=never \
+		$(UV_IMAGE) \
+			uv $(1)
+endef
+
+compile-requirements-amauat:  ## Refresh the AMAUAT uv lockfile
+	$(call amauat_uv,lock)
+
+upgrade-requirements-amauat:  ## Upgrade the AMAUAT uv lockfile
+	$(call amauat_uv,lock --upgrade)
+
+db:  ## Connect to the MySQL server using the CLI.
+	docker compose exec mysql mysql -hlocalhost -uroot -p12345
+
+flush: flush-shared-dir flush-search bootstrap restart-am-services  ## Delete ALL user data.
+
+flush-shared-dir-mcp-configs:  ## Delete processing configurations - it restarts MCPServer.
+	rm -f ${AM_PIPELINE_DATA}/sharedMicroServiceTasksConfigs/processingMCPConfigs/defaultProcessingMCP.xml
+	rm -f ${AM_PIPELINE_DATA}/sharedMicroServiceTasksConfigs/processingMCPConfigs/automatedProcessingMCP.xml
+	docker compose restart --no-deps archivematica-mcp-server
+
+flush-shared-dir:  ## Delete contents of the shared directory data volume.
+	rm -rf ${AM_PIPELINE_DATA}/*
+
+flush-search:  ## Delete Elasticsearch indices.
+	docker compose exec archivematica-mcp-client curl -XDELETE "http://elasticsearch:9200/aips,aipfiles,transfers,transferfiles"
+
+flush-logs:  ## Delete container logs - requires root privileges.
+	@./helpers/flush-docker-logs.sh
+
+# These include the database names used in the settings.testmysql
+# modules plus the prefixed and suffixed variations used by Django and
+# tox when running in parallel mode
+__TEST_DBS_MCPCLIENT = MCPCLIENTTEST test_MCPCLIENTTEST test_MCPCLIENTTEST_mcp-client
+__TEST_DBS_MIGRATIONS = DASHBOARDTEST SSTEST
+__TEST_DBS_DASHBOARD = DASHBOARDTEST test_DASHBOARDTEST test_DASHBOARDTEST_dashboard test_DASHBOARDTEST_archivematica-common
+__TEST_DBS_MCPSERVER = MCPSERVERTEST test_MCPSERVERTEST test_MCPSERVERTEST_mcp-server
+__TEST_DBS_ARCHIVEMATICA = ARCHIVEMATICATEST test_ARCHIVEMATICATEST%
+__TEST_DBS_STORAGE_SERVICE = test_SSTEST test_SSTEST_storage-service
+__TEST_DBS := $(__TEST_DBS_MCPCLIENT) $(__TEST_DBS_MIGRATIONS) $(__TEST_DBS_DASHBOARD) $(__TEST_DBS_MCPSERVER) $(__TEST_DBS_ARCHIVEMATICA) $(__TEST_DBS_STORAGE_SERVICE) test_MCP test_SS
+flush-test-dbs: start-mysql
+	$(foreach test_db,$(__TEST_DBS),$(call drop_db,$(test_db));)
+
+test-build:  ## Build archivematica-tests image.
+	@if [ "$$GITHUB_ACTIONS" != "true" ]; then \
+		docker build \
+			-t archivematica-tests \
+			-f $(CURDIR)/Dockerfile \
+			--build-arg TARGET=archivematica-tests \
+			--build-arg UBUNTU_VERSION \
+			--build-arg PYTHON_VERSION \
+			../; \
+	fi
+
+__TOXENVS_MCPSERVER := mcp-server
+test-mcp-server: start-mysql  ## Run MCPServer tests.
+	$(call grant_all_on_dbs,$(__TEST_DBS_MCPSERVER))
+	$(call run_toxenv,$(__TOXENVS_MCPSERVER),archivematica.MCPServer.settings.testmysql)
+
+__TOXENVS_MCPCLIENT = mcp-client
+test-mcp-client: start-mysql  ## Run MCPClient tests.
+	$(call grant_all_on_dbs,$(__TEST_DBS_MCPCLIENT))
+	$(call run_toxenv,$(__TOXENVS_MCPCLIENT),archivematica.MCPClient.settings.testmysql)
+
+__TOXENVS_DASHBOARD = dashboard
+test-dashboard: start-mysql  ## Run Dashboard tests.
+	$(call grant_all_on_dbs,$(__TEST_DBS_DASHBOARD))
+	$(call run_toxenv,$(__TOXENVS_DASHBOARD),archivematica.dashboard.settings.testmysql)
+
+__TOXENVS_STORAGE_SERVICE = storage-service
+test-storage-service: start-mysql  ## Run Storage Service tests.
+	$(call grant_all_on_dbs,$(__TEST_DBS_STORAGE_SERVICE))
+	$(call run_toxenv,$(__TOXENVS_STORAGE_SERVICE),archivematica.storage_service.storage_service.settings.testmysql)
+
+test-storage-service-integration:  ## Run Storage Service unit and integration tests using MySQL and MinIO.
+	$(CURDIR)/submodules/archivematica-storage-service/tests/integration/run.sh
+
+__TOXENVS_ARCHIVEMATICA_COMMON = archivematica-common
+test-archivematica-common: start-mysql  ## Run Archivematica Common tests.
+	$(call grant_all_on_dbs,$(__TEST_DBS_DASHBOARD))
+	$(call run_toxenv,$(__TOXENVS_ARCHIVEMATICA_COMMON),archivematica.dashboard.settings.testmysql)
+
+test-migrations: start-mysql  ## Check there are no pending migrations.
+	$(call create_dbs,$(__TEST_DBS_MIGRATIONS))
+	$(call run_toxenv,migrations-dashboard,archivematica.dashboard.settings.testmysql)
+	$(call run_toxenv,migrations-storage-service,archivematica.storage_service.storage_service.settings.testmysql)
+
+__TOXENVS_LINTING = linting
+test-linting:  ## Check linting.
+	$(call run_toxenv,$(__TOXENVS_LINTING),archivematica.dashboard.settings.testmysql)
+
+test-all: start-mysql  ## Run all tests.
+	$(call grant_all_on_dbs,$(__TEST_DBS_MCPSERVER) $(__TEST_DBS_MCPCLIENT) $(__TEST_DBS_DASHBOARD) $(__TEST_DBS_STORAGE_SERVICE) $(__TEST_DBS_ARCHIVEMATICA_COMMON))
+	$(call run_toxenv,$(__TOXENVS_MCPSERVER),archivematica.MCPServer.settings.testmysql)
+	$(call run_toxenv,$(__TOXENVS_MCPCLIENT),archivematica.MCPClient.settings.testmysql)
+	$(call run_toxenv,$(__TOXENVS_DASHBOARD),archivematica.dashboard.settings.testmysql)
+	$(call run_toxenv,$(__TOXENVS_ARCHIVEMATICA_COMMON),archivematica.dashboard.settings.testmysql)
+	$(call run_toxenv,$(__TOXENVS_STORAGE_SERVICE),archivematica.storage_service.storage_service.settings.testmysql)
+
+__TOXENVS_ARCHIVEMATICA = archivematica
+test-archivematica: start-mysql  ## Run Archivematica tests in a single run.
+	$(call grant_all_on_dbs,$(__TEST_DBS_ARCHIVEMATICA))
+	$(call run_toxenv,$(__TOXENVS_ARCHIVEMATICA),archivematica.settings.testmysql)
+
+test-integration:  ## Run integration tests.
+	$(CURDIR)/tests/integration/run.sh
+
+test-at-build:  ## AMAUAT: build image.
+	$(call compose_amauat, \
+		build --build-arg USER_ID=$(CALLER_UID) --build-arg GROUP_ID=$(CALLER_GID) archivematica-acceptance-tests)
+
+test-at-check: test-at-build  ## AMAUAT: test browsers.
+	$(call compose_amauat, \
+		run --rm --no-deps archivematica-acceptance-tests /home/artefactual/acceptance-tests/simplebrowsertest.py)
+
+define AT_HELP
+
+   Archivematica acceptance tests (Listing).
+
+   The most effective way to run these tests is to run them by tag. For
+   example:
+
+      $ make test-at-behave TAGS=aip-encrypt BROWSER=Firefox
+      $ make test-at-behave TAGS=black-box
+
+   Commonly used acceptance tests in the Archivematica suite:
+
+      * aip-encrypt        :Tests the encryption of AIPs.
+      * aip-encrypt-mirror :Tests the replication of encrypted AIPs.
+      * black-box          :Test Archivematica without Selenium web-driver.
+      * icc                :Conformance check feature on ingest.
+      * ipc                :Policy check feature on ingest.
+      * picc               :Policy check feature for preservation derivatives.
+      * tpc                :Policy check feature on transfer.
+      * uuids-dirs         :Tests whether UUIDs are assigned to AIP sub-DIRs.
+
+endef
+
+export AT_HELP
+test-at-help:  ## AMAUAT: list commonly used acceptance test tags.
+	@echo "$$AT_HELP"
+
+TAGS ?= black-box
+BROWSER ?= Firefox
+test-at-behave: test-at-build  ## AMAUAT: run behave, default is `make test-at-behave TAGS=black-box BROWSER=Firefox`.
+	$(call compose_amauat, \
+		run --rm -e HEADLESS=1 --no-deps archivematica-acceptance-tests behave \
+			--no-capture --no-capture-stderr --no-logcapture \
+			$(subst $(SPACE), --tags=,$(SPACE)$(TAGS)) --no-skipped -v --stop \
+			-D driver_name=$(BROWSER) \
+			-D ssh_accessible=no \
+			-D am_url=http://nginx/ \
+			-D am_username=test \
+			-D am_password=test \
+			-D am_api_key=test \
+			-D am_version=1.8 \
+			-D ss_url=http://nginx:8000/ \
+			-D ss_username=test \
+			-D ss_password=test \
+			-D ss_api_key=test \
+			-D transfer_source_path=archivematica/archivematica-sampledata/TestTransfers/acceptance-tests \
+			-D home=archivematica)
+
+test-at-black-box: TAGS=black-box  ## AMAUAT: run the black-box automation tests.
+test-at-black-box: test-at-behave
+
+stop:  # Stop all containers.
+	$(call compose_all, stop)
+
+help:  ## Print this help message.
+	@grep -E '^[a-zA-Z_-]+:.*?## .*$$' $(MAKEFILE_LIST) | sort | awk 'BEGIN {FS = ":.*?## "}; {printf "\033[36m%-30s\033[0m %s\n", $$1, $$2}'

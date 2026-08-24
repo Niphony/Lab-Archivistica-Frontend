@@ -1,0 +1,34 @@
+{% extends "layout_fluid.html" %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}{% trans "Format Policy Registry" %}{% endblock title %}
+
+{%comment%}Format {{format.description}}{%endcomment%}
+
+{% block extra_css %}
+  {{ block.super }}
+  <link rel="stylesheet" href="{% static 'fpr/fpr.css' %}" type="text/css" />
+{% endblock extra_css %}
+
+{% block content %}
+  <div class="row fpr-layout">
+    {% include 'fpr/_sidebar.html' %}
+
+    <div class="col-xs-10 fpr-main">
+      <ul class="breadcrumb">
+        {% block breadcrumbs %}{% endblock breadcrumbs %}
+      </ul>
+
+      <h2>{% block page_title %}{% endblock page_title %}</h2>
+
+      {% block app_content %}{% endblock app_content %}
+    </div>
+  </div>
+
+{% endblock content %}
+
+{% block extra_js %}
+  {{ block.super }}
+  <script type="module" src="{% static 'frontend/fpr-tables.js' %}"></script>
+{% endblock extra_js %}

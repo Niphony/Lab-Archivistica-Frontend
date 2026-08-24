@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block page_title %}
+{% blocktrans with request_type=config.event_type|title %}Package {{ request_type }} Requests{% endblocktrans %}
+{% endblock %}
+
+{% block content %}
+
+{% if request_events %}
+  <div
+    data-table-root
+    data-table-script-id="tables-package-requests-pending-payload"></div>
+  {{ pending_requests_table_payload|json_script:"tables-package-requests-pending-payload" }}
+{% else %}
+  <p>{% trans "No requests pending." %}</p>
+{% endif %}
+
+{% if closed_requests %}
+<h2>{% trans "Closed Requests" %}</h2>
+  <div
+    data-table-root
+    data-table-script-id="tables-package-requests-closed-payload"></div>
+  {{ closed_requests_table_payload|json_script:"tables-package-requests-closed-payload" }}
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,552 @@
+import hmac
+import uuid
+from hashlib import sha1
+from unittest import mock
+from urllib.parse import parse_qs
+from urllib.parse import urlparse
+
+import pytest
+import pytest_django
+from django.contrib.auth.models import User
+from django.contrib.sessions.middleware import SessionMiddleware
+from django.http import HttpRequest
+from django.http import HttpResponse
+from django.test import Client
+from django.test import RequestFactory
+from django.urls import reverse
+from tastypie.models import ApiKey
+
+from archivematica.dashboard.components.accounts.views import get_oidc_logout_url
+
+
+def attach_session(request: HttpRequest) -> None:
+    middleware = SessionMiddleware(lambda _request: HttpResponse())
+    middleware.process_request(request)
+
+
+def test_get_oidc_logout_url_fails_if_token_is_not_set(rf: RequestFactory) -> None:
+    request = rf.get("/")
+    attach_session(request)
+
+    with pytest.raises(ValueError, match="ID token not found in session."):
+        get_oidc_logout_url(request)
+
+
+def test_get_oidc_logout_url_fails_if_logout_endpoint_is_not_set(
+    rf: RequestFactory,
+) -> None:
+    request = rf.get("/")
+    attach_session(request)
+    request.session["oidc_id_token"] = "mytoken"
+
+    with pytest.raises(
+        ValueError, match="OIDC logout endpoint not configured for provider."
+    ):
+        get_oidc_logout_url(request)
+
+
+def test_get_oidc_logout_url_returns_logout_url(
+    rf: RequestFactory, settings: pytest_django.Settings
+) -> None:
+    settings.OIDC_OP_LOGOUT_ENDPOINT = "http://example.com/logout"
+    token = "mytoken"
+    request = rf.get("/")
+    attach_session(request)
+    request.session["oidc_id_token"] = token
+
+    result = get_oidc_logout_url(request)
+
+    assert result.startswith(settings.OIDC_OP_LOGOUT_ENDPOINT)
+    query_dict = parse_qs(urlparse(result).query)
+    assert set(query_dict) == {"id_token_hint", "post_logout_redirect_uri"}
+    assert query_dict["id_token_hint"] == [token]
+    assert query_dict["post_logout_redirect_uri"] == ["http://testserver/"]
+
+
+@pytest.fixture
+def non_administrative_user(django_user_model: type[User]) -> User:
+    return django_user_model.objects.create_user(
+        username="test",
+        password="test",
+        first_name="Foo",
+        last_name="Bar",
+        email="foobar@example.com",
+    )
+
+
+@pytest.mark.django_db
+def test_edit_user_view_denies_access_to_non_admin_users_editing_others(
+    dashboard_uuid: uuid.UUID,
+    non_administrative_user: User,
+    admin_user: User,
+    client: Client,
+) -> None:
+    client.force_login(non_administrative_user)
+
+    response = client.get(
+        reverse("accounts:edit", kwargs={"id": admin_user.id}), follow=True
+    )
+    assert response.status_code == 200
+
+    content = response.content.decode()
+    assert "Forbidden" in content
+    assert "You do not have enough access privileges for this operation" in content
+
+
+@pytest.fixture
+def non_administrative_user_apikey(non_administrative_user: User) -> ApiKey:
+    return ApiKey.objects.create(user=non_administrative_user)
+
+
+@pytest.mark.django_db
+def test_edit_user_view_renders_user_profile_fields(
+    dashboard_uuid: uuid.UUID,
+    non_administrative_user: User,
+    non_administrative_user_apikey: ApiKey,
+    admin_client: Client,
+) -> None:
+    expected_apikey = non_administrative_user_apikey.key
+
+    response = admin_client.get(
+        reverse("accounts:edit", kwargs={"id": non_administrative_user.id}), follow=True
+    )
+    assert response.status_code == 200
+
+    content = response.content.decode()
+    assert f"Edit user {non_administrative_user.username}" in content
+    assert f'name="username" value="{non_administrative_user.username}"' in content
+    assert f'name="first_name" value="{non_administrative_user.first_name}"' in content
+    assert f'name="last_name" value="{non_administrative_user.last_name}"' in content
+    assert f'name="email" value="{non_administrative_user.email}"' in content
+
+    non_administrative_user_apikey.refresh_from_db()
+    assert non_administrative_user_apikey.key == expected_apikey
+
+
+@pytest.mark.django_db
+def test_edit_user_view_updates_user_profile_fields(
+    dashboard_uuid: uuid.UUID,
+    non_administrative_user: User,
+    admin_client: Client,
+    admin_user: User,
+) -> None:
+    current_password = "currentpassword"
+    new_username = "newusername"
+    new_password = "newpassword"
+    new_first_name = "bar"
+    new_last_name = "foo"
+    new_email = "newemail@example.com"
+    data = {
+        "username": new_username,
+        "password": new_password,
+        "password_confirmation": new_password,
+        "current_password": current_password,
+        "first_name": new_first_name,
+        "last_name": new_last_name,
+        "email": new_email,
+    }
+    admin_user.set_password(current_password)
+    admin_user.save()
+    admin_client.force_login(admin_user)
+
+    response = admin_client.post(
+        reverse("accounts:edit", kwargs={"id": non_administrative_user.id}),
+        data,
+        follow=True,
+    )
+    assert response.status_code == 200
+
+    content = response.content.decode()
+    non_administrative_user.refresh_from_db()
+
+    assert "Saved" in content
+    assert f"Edit user {non_administrative_user.username}" in content
+    assert f'name="username" value="{non_administrative_user.username}"' in content
+    assert f'name="first_name" value="{non_administrative_user.first_name}"' in content
+    assert f'name="last_name" value="{non_administrative_user.last_name}"' in content
+    assert f'name="email" value="{non_administrative_user.email}"' in content
+
+    assert non_administrative_user.check_password(new_password)
+
+
+@pytest.mark.django_db
+def test_edit_user_view_regenerates_api_key(
+    dashboard_uuid: uuid.UUID,
+    non_administrative_user: User,
+    non_administrative_user_apikey: ApiKey,
+    admin_client: Client,
+) -> None:
+    data = {
+        "username": non_administrative_user.username,
+        "first_name": non_administrative_user.first_name,
+        "last_name": non_administrative_user.last_name,
+        "email": non_administrative_user.email,
+        "regenerate_api_key": True,
+    }
+    expected_uuid = uuid.uuid4()
+    expected_key = hmac.new(expected_uuid.bytes, digestmod=sha1).hexdigest()
+
+    with mock.patch("uuid.uuid4", return_value=expected_uuid):
+        response = admin_client.post(
+            reverse("accounts:edit", kwargs={"id": non_administrative_user.id}),
+            data,
+            follow=True,
+        )
+    assert response.status_code == 200
+
+    content = response.content.decode()
+    assert "Saved" in content
+    assert "Make sure to copy the API key now as you will not be able to see it again."
+    assert f'value="{expected_key}"' in content
+
+    non_administrative_user_apikey.refresh_from_db()
+    assert non_administrative_user_apikey.key == expected_key
+
+
+@pytest.mark.django_db
+def test_user_profile_view_allows_users_to_edit_their_profile_fields(
+    dashboard_uuid: uuid.UUID,
+    non_administrative_user: User,
+    non_administrative_user_apikey: ApiKey,
+    client: Client,
+    settings: pytest_django.Settings,
+) -> None:
+    settings.ALLOW_USER_EDITS = True
+    client.force_login(non_administrative_user)
+    expected_apikey = non_administrative_user_apikey.key
+
+    response = client.get(
+        reverse("accounts:profile"),
+        follow=True,
+    )
+    assert response.status_code == 200
+
+    content = response.content.decode()
+    assert f"Edit your profile ({non_administrative_user.username})" in content
+    assert f'name="username" value="{non_administrative_user.username}"' in content
+    assert f'name="first_name" value="{non_administrative_user.first_name}"' in content
+    assert f'name="last_name" value="{non_administrative_user.last_name}"' in content
+    assert f'name="email" value="{non_administrative_user.email}"' in content
+
+    non_administrative_user_apikey.refresh_from_db()
+    assert non_administrative_user_apikey.key == expected_apikey
+
+
+@pytest.mark.django_db
+def test_user_profile_view_denies_editing_profile_fields_if_setting_disables_it(
+    dashboard_uuid: uuid.UUID,
+    non_administrative_user: User,
+    non_administrative_user_apikey: ApiKey,
+    client: Client,
+    settings: pytest_django.Settings,
+) -> None:
+    settings.ALLOW_USER_EDITS = False
+    client.force_login(non_administrative_user)
+    expected_apikey = non_administrative_user_apikey.key
+
+    response = client.get(
+        reverse("accounts:profile"),
+        follow=True,
+    )
+    assert response.status_code == 200
+
+    content = response.content.decode()
+    assert f"Your profile ({non_administrative_user.username})" in content
+    assert f"<dd>{non_administrative_user.username}</dd>" in content
+    assert (
+        f"<dd>{non_administrative_user.first_name} {non_administrative_user.last_name}</dd>"
+        in content
+    )
+    assert f"<dd>{non_administrative_user.email}</dd>" in content
+    assert (
+        f"<dd>{'yes' if non_administrative_user.is_superuser else 'no'}</dd>" in content
+    )
+
+    non_administrative_user_apikey.refresh_from_db()
+    assert non_administrative_user_apikey.key == expected_apikey
+
+
+@pytest.mark.django_db
+def test_user_profile_view_regenerates_api_key_if_setting_disables_editing(
+    dashboard_uuid: uuid.UUID,
+    non_administrative_user: User,
+    non_administrative_user_apikey: ApiKey,
+    client: Client,
+    settings: pytest_django.Settings,
+) -> None:
+    settings.ALLOW_USER_EDITS = False
+    client.force_login(non_administrative_user)
+    data = {"regenerate_api_key": True}
+    expected_uuid = uuid.uuid4()
+    expected_key = hmac.new(expected_uuid.bytes, digestmod=sha1).hexdigest()
+
+    with mock.patch("uuid.uuid4", return_value=expected_uuid):
+        response = client.post(
+            reverse("accounts:profile"),
+            data,
+            follow=True,
+        )
+    assert response.status_code == 200
+
+    content = response.content.decode()
+    assert f"Your profile ({non_administrative_user.username})" in content
+    assert f"<dd>{non_administrative_user.username}</dd>" in content
+    assert (
+        f"<dd>{non_administrative_user.first_name} {non_administrative_user.last_name}</dd>"
+        in content
+    )
+    assert f"<dd>{non_administrative_user.email}</dd>" in content
+    assert (
+        f"<dd>{'yes' if non_administrative_user.is_superuser else 'no'}</dd>" in content
+    )
+
+    non_administrative_user_apikey.refresh_from_db()
+    assert non_administrative_user_apikey.key == expected_key
+
+
+@pytest.mark.django_db
+def test_user_profile_view_does_not_regenerate_api_key_if_not_requested(
+    dashboard_uuid: uuid.UUID,
+    non_administrative_user: User,
+    non_administrative_user_apikey: ApiKey,
+    client: Client,
+    settings: pytest_django.Settings,
+) -> None:
+    settings.ALLOW_USER_EDITS = False
+    client.force_login(non_administrative_user)
+    expected_apikey = non_administrative_user_apikey.key
+
+    response = client.post(reverse("accounts:profile"), {}, follow=True)
+    assert response.status_code == 200
+
+    content = response.content.decode()
+    assert f"Your profile ({non_administrative_user.username})" in content
+    assert f"<dd>{non_administrative_user.username}</dd>" in content
+    assert (
+        f"<dd>{non_administrative_user.first_name} {non_administrative_user.last_name}</dd>"
+        in content
+    )
+    assert f"<dd>{non_administrative_user.email}</dd>" in content
+    assert (
+        f"<dd>{'yes' if non_administrative_user.is_superuser else 'no'}</dd>" in content
+    )
+
+    non_administrative_user_apikey.refresh_from_db()
+    assert non_administrative_user_apikey.key == expected_apikey
+
+
+@pytest.mark.django_db
+def test_user_successfully_changes_own_password(
+    dashboard_uuid: uuid.UUID,
+    non_administrative_user: User,
+    client: Client,
+    settings: pytest_django.Settings,
+) -> None:
+    """Test that a user can successfully change their own password with correct current_password."""
+    settings.ALLOW_USER_EDITS = True
+
+    # Set a known password for the user
+    old_password = "oldpass123"
+    non_administrative_user.set_password(old_password)
+    non_administrative_user.save()
+
+    # Log in with the known password
+    client.force_login(non_administrative_user)
+
+    # Data to change the user's password
+    new_password = "newpass456"
+    data = {
+        "username": non_administrative_user.username,
+        "first_name": non_administrative_user.first_name,
+        "last_name": non_administrative_user.last_name,
+        "email": non_administrative_user.email,
+        "current_password": old_password,  # Correct current password
+        "password": new_password,
+        "password_confirmation": new_password,
+    }
+
+    response = client.post(
+        reverse("accounts:profile"),
+        data,
+        follow=False,  # Don't follow redirects to see the direct response
+    )
+
+    # Check if the form was processed correctly
+    # It might redirect to login or show success message
+    assert response.status_code in [200, 302]  # Success or redirect
+
+    # Verify password was changed regardless of UI behavior
+    non_administrative_user.refresh_from_db()
+    assert non_administrative_user.check_password(new_password)
+    assert not non_administrative_user.check_password(old_password)
+
+
+@pytest.mark.django_db
+def test_user_fails_to_change_password_with_incorrect_current_password(
+    dashboard_uuid: uuid.UUID,
+    non_administrative_user: User,
+    client: Client,
+    settings: pytest_django.Settings,
+) -> None:
+    """Test that a user fails to change their password with incorrect current_password."""
+    settings.ALLOW_USER_EDITS = True
+
+    # Set a known password for the user
+    old_password = "oldpass123"
+    non_administrative_user.set_password(old_password)
+    non_administrative_user.save()
+
+    # Log in with the known password
+    client.force_login(non_administrative_user)
+
+    # Data to change the user's password with WRONG current password
+    new_password = "newpass456"
+    data = {
+        "username": non_administrative_user.username,
+        "first_name": non_administrative_user.first_name,
+        "last_name": non_administrative_user.last_name,
+        "email": non_administrative_user.email,
+        "current_password": "wrongpass",  # Incorrect current password
+        "password": new_password,
+        "password_confirmation": new_password,
+    }
+
+    response = client.post(
+        reverse("accounts:profile"),
+        data,
+        follow=True,
+    )
+    assert response.status_code == 200
+
+    content = response.content.decode()
+    # Should show error message about incorrect current password
+    assert "Your current password is incorrect." in content
+
+    # Verify password was NOT changed
+    non_administrative_user.refresh_from_db()
+    assert non_administrative_user.check_password(old_password)  # Still old password
+    assert not non_administrative_user.check_password(
+        new_password
+    )  # New password not set
+
+
+@pytest.mark.django_db
+def test_admin_successfully_changes_another_users_password(
+    dashboard_uuid: uuid.UUID,
+    non_administrative_user: User,
+    admin_user: User,
+    admin_client: Client,
+) -> None:
+    """Test that an admin can successfully change another user's password with admin's current_password."""
+    # Set passwords for both users
+    admin_password = "adminpass123"
+    user_old_password = "useroldpass"
+
+    admin_user.set_password(admin_password)
+    admin_user.save()
+    non_administrative_user.set_password(user_old_password)
+    non_administrative_user.save()
+
+    # Log in as admin
+    admin_client.force_login(admin_user)
+
+    # Data to change the other user's password using admin's current password
+    user_new_password = "usernewpass456"
+    data = {
+        "username": non_administrative_user.username,
+        "first_name": non_administrative_user.first_name,
+        "last_name": non_administrative_user.last_name,
+        "email": non_administrative_user.email,
+        "current_password": admin_password,  # Admin's password (not the user's)
+        "password": user_new_password,
+        "password_confirmation": user_new_password,
+    }
+
+    response = admin_client.post(
+        reverse("accounts:edit", kwargs={"id": non_administrative_user.id}),
+        data,
+        follow=False,
+    )
+
+    # Check if the form was processed correctly
+    assert response.status_code in [200, 302]  # Success or redirect
+
+    # Verify the user's password was changed
+    non_administrative_user.refresh_from_db()
+    assert non_administrative_user.check_password(user_new_password)
+    assert not non_administrative_user.check_password(user_old_password)
+
+    # Verify admin password is unchanged
+    admin_user.refresh_from_db()
+    assert admin_user.check_password(admin_password)
+
+
+@pytest.mark.django_db
+def test_admin_fails_to_change_another_users_password_with_incorrect_admin_password(
+    dashboard_uuid: uuid.UUID,
+    non_administrative_user: User,
+    admin_user: User,
+    admin_client: Client,
+) -> None:
+    """Test that an admin fails to change another user's password with incorrect admin password."""
+    # Set passwords for both users
+    admin_password = "adminpass123"
+    user_old_password = "useroldpass"
+
+    admin_user.set_password(admin_password)
+    admin_user.save()
+    non_administrative_user.set_password(user_old_password)
+    non_administrative_user.save()
+
+    # Log in as admin
+    admin_client.force_login(admin_user)
+
+    # Data to change the other user's password using WRONG admin password
+    user_new_password = "usernewpass456"
+    data = {
+        "username": non_administrative_user.username,
+        "first_name": non_administrative_user.first_name,
+        "last_name": non_administrative_user.last_name,
+        "email": non_administrative_user.email,
+        "current_password": "wrongadminpass",  # Wrong admin password
+        "password": user_new_password,
+        "password_confirmation": user_new_password,
+    }
+
+    response = admin_client.post(
+        reverse("accounts:edit", kwargs={"id": non_administrative_user.id}),
+        data,
+        follow=True,
+    )
+    assert response.status_code == 200
+
+    content = response.content.decode()
+    # Should show error message about incorrect current password
+    assert "Your current password is incorrect." in content
+
+    # Verify the user's password was NOT changed
+    non_administrative_user.refresh_from_db()
+    assert non_administrative_user.check_password(
+        user_old_password
+    )  # Still old password
+    assert not non_administrative_user.check_password(
+        user_new_password
+    )  # New password not set
+
+    # Verify admin password is unchanged
+    admin_user.refresh_from_db()
+    assert admin_user.check_password(admin_password)
+
+
+@pytest.mark.django_db
+def test_logout_view_logs_out_user(
+    dashboard_uuid: uuid.UUID,
+    non_administrative_user: User,
+    client: Client,
+) -> None:
+    client.force_login(non_administrative_user)
+
+    response = client.post(reverse("accounts:logout"), follow=True)
+    assert response.status_code == 200
+
+    assert response.request["PATH_INFO"] == reverse("accounts:login")

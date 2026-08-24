@@ -1,0 +1,549 @@
+body {
+  font-size: 13px;
+  line-height: 18px;
+}
+
+/*
+ * Logos
+ */
+
+.logo {
+  display: block;
+  height: auto;
+  max-width: 100%;
+}
+
+.logo-welcome {
+  width: 469px;
+  margin: 0 0 20px 0;
+}
+
+.logo-login {
+  width: 240px;
+  margin: 0 auto 20px auto;
+}
+
+.logo-header {
+  width: 100%;
+}
+
+/*
+ * Navigation bar
+ */
+
+.navbar-nav > li > a, .navbar-brand {
+    padding-top: 10px;
+    padding-bottom: 0;
+    height: 40px;
+}
+.navbar {
+  min-height: 40px;
+}
+
+.topbar-inner {
+  background-color: #222222;
+  background-image: linear-gradient(to bottom, #333333, #222222);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.25), inset 0 -1px 0 rgba(0, 0, 0, 0.1);
+}
+
+.topbar .navbar-brand {
+  display: inline-block;
+  width: 220px;
+  padding: 8px 15px 0 0;
+}
+
+@media (max-width: 767px) {
+  .topbar .navbar-brand {
+    float: none;
+  }
+}
+
+.topbar .navbar-brand > img {
+  width: 100%;
+}
+
+.topbar a {
+  color: #BFBFBF;
+  text-shadow: 0 -1px 0 rgba(0, 0, 0, 0.25);
+}
+
+.topbar li > a:hover,
+.topbar .navbar-brand:hover,
+.topbar .open > a,
+.topbar .open > a:hover,
+.topbar .open > a:focus {
+  background-color: rgba(255, 255, 255, 0.05);
+  color: #fff;
+  border-color: #444;
+}
+
+.topbar div > ul .active > a {
+  background-color: rgba(0, 0, 0, 0.5);
+  color: #FFF;
+  text-decoration: none;
+}
+
+.topbar div > ul .dropdown-menu {
+  background-color: #333;
+  border-color: #333;
+  font-size: 13px;
+}
+
+.topbar div > ul .dropdown-menu > li > a,
+.topbar div > ul .dropdown-menu > li > form > button {
+  color: #999;
+}
+
+.topbar div > ul .dropdown-menu > li > a:hover,
+.topbar div > ul .dropdown-menu > li > form > button:hover {
+  color: #fff;
+  background-color: #191919;
+}
+
+.topbar div > ul .dropdown-menu > li > form > button {
+  background: none;
+  border: 0;
+  padding: 3px 20px;
+  width: 100%;
+  text-align: left;
+}
+
+.topbar div > ul .dropdown-menu > li > form {
+  margin: 0;
+}
+
+.topbar div > ul .dropdown-menu > .divider {
+  height: 2px;
+  margin: 5px 0;
+  background-color: #222;
+  border-bottom: 1px solid #444;
+}
+
+.nav li {
+  position: relative;
+}
+
+li.active {
+  background-color: #eee;
+}
+
+li.user > a {
+  cursor: pointer;
+  border-left: 2px solid #444;
+}
+
+/*
+ * Content
+ */
+
+.container .content,
+.container-fluid .content {
+  padding-top: 20px;
+  padding-bottom: 20px;
+}
+
+/*
+ * Tooltips
+ */
+
+.tooltip {
+  position: absolute;
+  border: 1px solid #333;
+  background: #f7f5d1;
+  color: #333;
+  border-radius: 4px;
+  box-shadow: 4px 4px 4px #999999;
+  filter: progid:DXImageTransform.Microsoft.dropShadow(color=#999999, offX=4, offY=4, positive=true);
+}
+
+.tooltip > .tooltip-title {
+  margin: 0;
+  white-space: nowrap;
+  padding: 2px 4px;
+  background-color: #888;
+  font-weight: bold;
+  color: White;
+}
+
+.tooltip > .tooltip-content {
+  padding: 2px 5px 2px 5px;
+  margin: 0 0 0 0;
+}
+
+.tooltip {
+  opacity: 1;
+}
+
+/*
+ * Status widget
+ */
+
+#connection-status > #status-bullet {
+  height: 40px;
+  line-height: 40px;
+}
+
+#connection-status > #status-bullet > img {
+  width: 16px;
+  height: 16px;
+}
+
+#connection-status > #status-bullet > span {
+  color: #bfbfbf;
+}
+
+/*
+ * SIPs
+ */
+
+#sip-container {
+  width: 950px;
+}
+
+#sip-header {
+  font-weight: bold;
+  padding: 3px 2px;
+  height: 2em;
+  margin-bottom: 7px;
+  border-bottom: 1px dotted #CACACA;
+}
+
+#sip-header > div { float: left; padding: 3px 2px 3px 2px; }
+#sip-header-directory { width: 322px; }
+#sip-header-uuid { width: 310px; }
+#sip-header-timestamp { width: 180px; }
+
+.task-exit-code {
+  margin-top: 6px;
+  font-size: 150%;
+}
+
+.task-body {
+  border-left: 8px solid #ccc;
+  padding-left: 20px;
+}
+
+.shell-output {
+  background-color: #f3f3f3;
+}
+
+.shell-output > pre {
+  white-space: pre-wrap;
+  margin: 0; padding: 0; border: 0;
+  background-color: transparent;
+}
+
+/*
+ * Optimizations based in screen width
+ */
+
+.w-lte-1020 .sip-detail-uuid,
+.w-lte-1020 #sip-header-uuid {
+  display: none;
+}
+
+.w-lte-1020 .sip-detail-directory > abbr {
+  display: inline;
+}
+
+.w-lte-1020 #sip-header-directory {
+  width: 452px;
+}
+
+.w-lte-1020 .sip-detail-directory {
+  width: 430px;
+}
+
+.w-lte-1020 .job-detail-microservice {
+  width: 450px;
+}
+
+.w-lte-1020 .job-detail-actions > a > span,
+.w-lte-1020 .sip-detail-actions > a > span,
+.w-lte-1200 .job-detail-actions > a > span,
+.w-lte-1200 .sip-detail-actions > a > span {
+  display: none;
+}
+
+.w-lte-1020 .job-detail-microservice > span:first-child {
+  display: none;
+}
+
+/*
+ * Normalization report
+ */
+
+td.error {
+  background-color: #f2d8d8;
+}
+
+/*
+ * Forms
+ */
+
+textarea {
+  resize: vertical;
+}
+
+#page-accounts-edit form .actions {
+  margin: 20px 0 0;
+}
+
+/* Error help messages are coded bright red to ensure that they stand
+ * out on the page for users. */
+div.has-error div span.error-msg {
+  color: red;
+}
+
+div.has-error div p.help-block {
+  color: red;
+}
+
+
+/*
+ * Reset jQuery UI dialog
+ */
+
+.ui-dialog {
+  box-shadow: 0 0 8px #333;
+  filter: progid:DXImageTransform.Microsoft.dropShadow(color=#333, offX=4, offY=4, positive=true);
+  padding: 0;
+  border-radius: 0;
+}
+
+.ui-dialog .ui-widget-header {
+  /* Commented out because white font on light grey background was hard to
+   * read. Uncomment if it was better before *
+   * background: none; */
+  border: 0;
+  border-bottom: 1px solid #e5e5e5;
+}
+
+.ui-dialog .ui-dialog-title {
+  line-height: 1.2em;
+}
+
+.ui-dialog .ui-dialog-titlebar {
+  border-radius: 0;
+  background-color: #eee;
+  padding: 10px 18px;
+}
+
+.ui-dialog .ui-dialog-content {
+  padding: 1em;
+}
+
+.ui-dialog .ui-dialog-buttonpane {
+  border-color: #e5e5e5;
+}
+
+/*
+ * Command
+ */
+
+input.command,
+textarea.command {
+  font-family: "Courier New", Courier, "Lucida Console", monospace;
+  font-size: 14px;
+  line-height: 1.5em;
+}
+
+/*
+ * Login
+ */
+
+#login {
+
+  width: 320px;
+  margin: auto;
+  padding-top: 120px;
+
+}
+
+#login * {
+  box-sizing: border-box;
+}
+
+#login form {
+
+  padding: 26px 0 0 0;
+  background: #eee;
+  border: 1px solid #c5c5c5;
+  box-shadow: rgba(200, 200, 200, 0.7) 0 4px 10px -1px;
+  border-radius: 4px;
+
+}
+
+#login input {
+
+  width: 100%;
+  height: 40px;
+  font-size: 24px;
+  line-height: 1;
+
+}
+
+#login .fields {
+  padding: 0 20px 20px 20px;
+}
+
+#login .actions {
+
+  text-align: right;
+  margin: 0;
+  padding: 10px 20px;
+  background-color: #fafafa;
+  border-top: 1px solid #bbb;
+  box-shadow: inset 0 3px 14px -6px rgba(0, 0, 0, 0.6);
+
+}
+
+#forgot-password {
+  float: left;
+  line-height: 28px;
+}
+
+/*
+ * Sidebar
+ */
+
+.sidebar ul,
+.sidebar li {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.sidebar li {
+  padding: 4px 6px;
+}
+
+.sidebar .active {
+  border: 1px solid #666;
+  box-shadow: 1px 1px 1px rgba(0, 0, 0, .5);
+  border-radius: 0 4px 4px 0;
+}
+
+.sidebar .active a {
+  color: Black;
+  text-decoration: none;
+}
+
+
+/*
+ * Rights administration
+ */
+
+.rights-basis-fieldset {
+  border-bottom: 1px solid #eee;
+  margin-bottom: 1em;
+}
+
+.statute-fieldset, .non-repeating-formset {
+  margin-top: 2em;
+}
+
+.statute-fieldset:nth-child(odd), .grant-fieldset:nth-child(odd) {
+  background: #ffe;
+}
+
+.repeating-ajax-data-row.repeating-data-multifield {
+  padding: 10px;
+}
+
+.repeating-ajax-data-row {
+  margin-bottom: 10px;
+}
+
+.repeating-data-multifield {
+  background-color: #eee;
+}
+
+.rights-grant-restrictions > div > .repeating-ajax-data-row {
+  padding-left: 0em;
+  padding-bottom: 0em;
+}
+
+.rights-grant-restrictions > .repeating-ajax-data-row {
+  padding-left: 0em;
+  padding-bottom: 0em;
+}
+
+#upload-dip-modal-spinner {
+  display: none;
+}
+
+.revisions_link {
+  float: right;
+  border: 1px solid #666;
+  border-radius: 15px;
+  padding: 5px;
+  color: black;
+  background-color: #eee;
+}
+
+label.required-field:after {
+  content: '*'
+}
+
+/* route=view_aip */
+
+.aip-details code {
+  background-color: transparent;
+}
+
+.aip-details .uuid {
+  padding-left: 0;
+  font-size: 1.2em;
+}
+
+.aip-details .location-preview {
+  margin-left: 10px;
+}
+
+.aip-details th {
+  vertical-align: middle;
+}
+
+/* A custom pane with tabs based on bs1 tabs, e.g. see archival storage view page */
+
+.am-tabs-pane {
+  margin-bottom: 20px;
+}
+
+.am-tabs-pane legend {
+  padding-bottom: 10px;
+}
+
+.am-tabs-pane .form-stacked {
+  padding: 0 20px 20px;
+}
+
+.am-tabs-pane .tabs {
+  margin-bottom: 0;
+}
+
+.am-tabs-pane .tab-content {
+  padding-top: 20px;
+  border: 1px solid #ddd;
+  border-top-width: 0;
+}
+
+.am-tabs-pane .tab-pane .am-actions {
+  background-color: #f5f5f5;
+  margin-left: -20px;
+  margin-right: -20px;
+  margin-bottom: -20px;
+  padding: 10px 20px;
+  border-bottom: 1px solid #ddd;
+  border-top: 1px solid #ddd;
+}
+
+.am-tabs-pane .errorlist {
+  margin: 0;
+}
+
+.am-tabs-pane .errorlist li {
+  list-style: none;
+  color: red;
+}

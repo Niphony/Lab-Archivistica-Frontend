@@ -1,0 +1,81 @@
+---
+name: "Acceptance Test"
+on:
+  workflow_dispatch:
+  pull_request:
+    types: [labeled]
+jobs:
+  test:
+    if: "${{ github.event_name == 'workflow_dispatch' || (github.event_name == 'pull_request' && github.event.label.name == 'AMAUAT') }}"
+    name: "Test ${{ matrix.tag }} on ${{ matrix.browser }}"
+    runs-on: "ubuntu-24.04"
+    strategy:
+      fail-fast: false
+      matrix:
+        tag:
+          - "aip-encrypt"
+          - "aip-encrypt-mirror"
+          - "black-box"
+          - "icc"
+          - "ipc preservation"
+          - "ipc access"
+          - "man-norm"
+          - "metadata-xml"
+          - "tcc"
+          - "tpc"
+          - "uuids-dirs"
+        browser:
+          - "Firefox"
+    steps:
+      - name: "Check out repository"
+        uses: "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1" # v7.0.1
+        with:
+          submodules: true
+      - name: "Create external volumes"
+        run: |
+          make -C hack/ create-volumes
+      - name: "Start MySQL"
+        run: |
+          docker compose up -d mysql
+        working-directory: ./hack
+      - name: "Build images"
+        run: |
+          make -C hack/ build
+        env:
+          PYTHON_VERSION: "3.10"
+      - name: "Start services"
+        run: |
+          docker compose up -d
+        env:
+          ELASTICSEARCH_DISK_THRESHOLD_ENABLED: "false"
+        working-directory: ./hack
+      - name: "Bootstrap services"
+        run: |
+          make -C hack/ bootstrap
+      - name: "Restart services"
+        run: |
+          make -C hack/ restart-am-services
+      - name: "Prune Docker"
+        run: |
+          docker builder prune --all --force
+          docker image prune --all --force
+        working-directory: ./hack
+      - name: "Run AMAUAT tag"
+        id: "amauat-run"
+        run: |
+          make -C hack/ test-at-behave TAGS="${{ matrix.tag }}" BROWSER=${{ matrix.browser }}
+      - name: "Save docker logs on failure"
+        if: "${{ (failure() && steps.amauat-run.outcome == 'failure') || (cancelled() && steps.amauat-run.outcome == 'cancelled') }}"
+        run: |
+          mkdir docker-logs
+          docker compose logs --no-log-prefix --no-color archivematica-mcp-server > docker-logs/mcp-server.log
+          docker compose logs --no-log-prefix --no-color archivematica-mcp-client > docker-logs/mcp-client.log
+          docker compose logs --no-log-prefix --no-color archivematica-dashboard > docker-logs/dashboard.log
+          docker compose logs --no-log-prefix --no-color archivematica-storage-service > docker-logs/storage-service.log
+        working-directory: ./hack
+      - name: "Upload docker logs on failure"
+        if: "${{ (failure() && steps.amauat-run.outcome == 'failure') || (cancelled() && steps.amauat-run.outcome == 'cancelled') }}"
+        uses: "actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a" # v7.0.1
+        with:
+          name: "docker-logs-${{ matrix.tag }}-${{ matrix.browser }}"
+          path: "./hack/docker-logs"

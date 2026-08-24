@@ -1,0 +1,40 @@
+{% extends "layout_fluid.html" %}
+{% load breadcrumb %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}{% trans "Archival storage" %}{% endblock %}
+{% block h1 %}{% endblock %}
+{% block page_id %}archival-storage{% endblock %}
+
+{% block js %}
+  <script type="module" src="{% static 'frontend/archival-storage.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+
+  {% if search_aips_enabled %}
+
+    <ul class="breadcrumb">
+      {% trans "Archival storage" as archival_storage_label %}
+      {% trans "Search" as search_label %}
+      {% breadcrumb_url archival_storage_label 'archival_storage:archival_storage_index' %}
+      {% breadcrumb search_label %}
+    </ul>
+
+    <h2>{% trans "Browse archival storage" %}</h2>
+
+    <div
+      id="archival-storage-app"
+      data-total-size="{{ total_size }}"
+      data-files-indexed-count="{{ aip_indexed_file_count|default_if_none:'' }}"
+    ></div>
+
+  {% else %}
+
+    <h1>{% trans "Elasticsearch Indexing Disabled" %}</h1>
+    <p class="es-indexing-disabled">{% trans "Sorry, Elasticsearch indexing has been disabled for the AIPs related indexes in this Archivematica installation. The archival storage tab is non-functional when indexing is turned off." %}</p>
+
+  {% endif %}
+
+{% endblock %}

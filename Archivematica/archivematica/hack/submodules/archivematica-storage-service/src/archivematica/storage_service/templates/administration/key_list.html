@@ -1,0 +1,15 @@
+{% extends "administration/base.html" %}
+{% load i18n %}
+
+{% block page_title %}{% trans "Encryption Keys" %}{% endblock %}
+
+{% block content %}
+
+  <p><a href="{% url 'administration:key_create' %}">{% trans "Create New Key" %}</a>
+     &nbsp;|&nbsp;
+     <a href="{% url 'administration:key_import' %}">{% trans "Import Existing Key" %}</a></p>
+  <div
+    data-table-root
+    data-table-script-id="tables-keys-table-payload"></div>
+  {{ keys_table_payload|json_script:"tables-keys-table-payload" }}
+{% endblock %}

@@ -1,0 +1,90 @@
+{% extends "fluid.html" %}
+{% load i18n %}
+
+{% block page_title %}{% blocktrans %}{{ location }} Information{% endblocktrans %}{% endblock %}
+{% block data_features_page %}modal,package-request-delete{% endblock %}
+
+{% block content %}
+
+<div class='location'>
+  <dl>
+    <dt>{% trans "Space" %}</dt> <dd><a href="{% url 'locations:space_detail' location.space.uuid %}">{{ location.space }}</a></dd>
+    <dt>{% trans "Purpose" %}</dt> <dd>{{ location.get_purpose_display }}</dd>
+    <dt>{% trans "Description" %}</dt> <dd>{{ location.description }}</dd>
+    <dt>{% trans "Full Path" %}</dt> <dd>{{ location.full_path }}</dd>
+    <dt>{% trans "Relative Path" %}</dt> <dd>{{ location.relative_path }}</dd>
+    <dt>{% trans "Usage" %}</dt> <dd>{{ location.used|filesizeformat }} / {{ location.quota|filesizeformat }}</dd>
+    <dt>{% trans "Enabled" %}</dt> <dd>{{ location.enabled|yesno:_("Enabled,Disabled") }}</dd>
+    <dt>{% trans "Default" %}</dt> <dd>{{ location.default|yesno:_("Yes,No") }}</dd>
+
+    <!-- List replicators if location is non-replicator; otherwise list links to masters. -->
+    {% if location.purpose == 'RP' %}
+      {% with location.masters.all as master_locations %}
+        <dt>{% trans "Master locations" %}</dt>
+          <dd>
+          {% if master_locations %}
+            <ul>
+              {% for master in master_locations %}
+                <li><a href="{% url 'locations:location_detail' master.uuid %}">{{ master }}</a></li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            There are none.
+          {% endif %}
+          </dd>
+        </dt>
+      {% endwith %}
+    {% else %}
+      {% with location.replicators.all as replicator_locations %}
+        <dt>{% trans "Replicator locations" %}</dt>
+          <dd>
+          {% if replicator_locations %}
+            <ul>
+              {% for replicator in replicator_locations %}
+                <li><a href="{% url 'locations:location_detail' replicator.uuid %}">{{ replicator }}</a></li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            There are none.
+          {% endif %}
+          </dd>
+        </dt>
+      {% endwith %}
+    {% endif %}
+
+    {% if perms.locations.change_location or perms.locations.delete_location %}
+      <dt>{% trans "Actions" %}</dt>
+      <dd>
+        <ul>
+          {% if perms.locations.change_location %}
+            <li><a href="{% url 'locations:location_edit' location.space.uuid location.uuid %}">{% trans "Edit Location" %}</a></li>
+          {% endif %}
+          {% if perms.locations.change_location %}
+            <li><a href="{% url 'locations:location_switch_enabled' location.uuid %}?next={{ request.path }}">{{ location.enabled|yesno:_("Disable,Enable") }}</a></li>
+          {% endif %}
+          {% if perms.locations.delete_location %}
+            <li><a href="{% url 'locations:location_delete' location.uuid %}">{% trans "Delete Location" %}</a></li>
+          {% endif %}
+        </ul>
+      </dd>
+    {% endif %}
+  </dl>
+</div>
+
+<h2>{% trans "Pipelines" %}</h2>
+
+{% if pipelines %}
+  {% include "snippets/pipelines_table.html" %}
+{% else %}
+  <p>{% trans "No pipelines in this space." %}</p>
+{% endif %}
+
+<h2>{% trans "Packages" %}</h2>
+
+{% if package_count %}
+  {% include "snippets/packages_table.html" %}
+{% else %}
+  <p>{% trans "No packages in this space." %}</p>
+{% endif %}
+
+{% endblock %}

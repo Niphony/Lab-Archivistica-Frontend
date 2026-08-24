@@ -1,0 +1,28 @@
+# Ignore everything
+**
+
+# Include
+!/install/**
+!/src/**
+!/tests/**
+!/.python-version
+!/pyproject.toml
+!/uv.lock
+!/.markdownlint.jsonc
+!/.pre-commit-config.yaml
+!/CHANGELOG.md
+!/CODE_OF_CONDUCT.md
+!/CONTRIBUTING.md
+!/LICENSE
+!/Makefile
+!/README.md
+!/SECURITY.md
+
+# Exclude
+**/*~
+**/*.egg-info
+**/node_modules
+**/__pycache__/
+**/*.py[cod]
+**/.mypy_cache
+**/.ruff_cache

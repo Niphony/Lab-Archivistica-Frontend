@@ -1,0 +1,33 @@
+{% extends "layout_fluid.html" %}
+{% load breadcrumb %}
+{% load i18n %}
+{% load static %}
+
+{% block js %}
+  <script type="module" src="{% static 'frontend/md-editor.js' %}"></script>
+{% endblock %}
+
+{% block content %}
+  <div class="row">
+    <div class="col-md-12">
+
+    <ul class="breadcrumb">
+      {% trans "Ingest" as ingest_label %}
+      {% trans "Add metadata files" as add_metadata_files_label %}
+      {% breadcrumb_url ingest_label 'ingest:ingest_index' %}
+      {% breadcrumb_url name 'unit:detail' 'ingest' sip_uuid %}
+      {% breadcrumb add_metadata_files_label %}
+    </ul>
+
+    <h1>
+      {{ add_metadata_files_label }}<br />
+      <small>{{ name }}</small>
+    </h1>
+
+    {% if editor_payload %}
+      <div id="md-editor"></div>
+      {{ editor_payload|json_script:"md-editor-data" }}
+    {% endif %}
+    </div>
+  </div>
+{% endblock %}

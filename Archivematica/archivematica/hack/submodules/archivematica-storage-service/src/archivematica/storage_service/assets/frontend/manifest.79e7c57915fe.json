@@ -1,0 +1,194 @@
+{
+  "__plugin-vue_export-helper-B3ysoDQm.js": {
+    "file": "_plugin-vue_export-helper-B3ysoDQm.js",
+    "name": "_plugin-vue_export-helper"
+  },
+  "_client-C_wHJOl3.js": {
+    "file": "client-C_wHJOl3.js",
+    "name": "client"
+  },
+  "_i18n-D6k_RFjI.js": {
+    "file": "i18n-D6k_RFjI.js",
+    "name": "i18n",
+    "imports": [
+      "_runtime-CsFmpt5v.js"
+    ],
+    "dynamicImports": [
+      "lib/shared/i18n/locales/en.json",
+      "lib/shared/i18n/locales/es.json",
+      "lib/shared/i18n/locales/fr.json",
+      "lib/shared/i18n/locales/ja.json",
+      "lib/shared/i18n/locales/no.json",
+      "lib/shared/i18n/locales/pt-br.json",
+      "lib/shared/i18n/locales/pt.json",
+      "lib/shared/i18n/locales/sv.json"
+    ]
+  },
+  "_plain-GH5faqzX.js": {
+    "file": "plain-GH5faqzX.js",
+    "name": "plain",
+    "imports": [
+      "_i18n-D6k_RFjI.js"
+    ]
+  },
+  "_runtime-CsFmpt5v.js": {
+    "file": "runtime-CsFmpt5v.js",
+    "name": "runtime"
+  },
+  "_treeview-O_e403sy.js": {
+    "file": "treeview-O_e403sy.js",
+    "name": "treeview",
+    "imports": [
+      "_runtime-CsFmpt5v.js"
+    ]
+  },
+  "lib/core/features/callback-headers/index.ts": {
+    "file": "core-feature-callback-headers-C07Ogu5H.js",
+    "name": "callback-headers",
+    "src": "lib/core/features/callback-headers/index.ts",
+    "isDynamicEntry": true,
+    "imports": [
+      "_plain-GH5faqzX.js"
+    ]
+  },
+  "lib/core/features/clipboard-field/index.ts": {
+    "file": "core-feature-clipboard-field-CHRSzwSN.js",
+    "name": "clipboard-field",
+    "src": "lib/core/features/clipboard-field/index.ts",
+    "isDynamicEntry": true,
+    "imports": [
+      "_i18n-D6k_RFjI.js",
+      "_plain-GH5faqzX.js"
+    ]
+  },
+  "lib/core/features/location-replicators/index.ts": {
+    "file": "core-feature-location-replicators-C0ncx2aL.js",
+    "name": "location-replicators",
+    "src": "lib/core/features/location-replicators/index.ts",
+    "isDynamicEntry": true
+  },
+  "lib/core/features/modal/index.ts": {
+    "file": "core-feature-modal-CME3yrX_.js",
+    "name": "modal",
+    "src": "lib/core/features/modal/index.ts",
+    "isDynamicEntry": true
+  },
+  "lib/core/features/nav-collapse/index.ts": {
+    "file": "core-feature-nav-collapse-tZqOM5c_.js",
+    "name": "nav-collapse",
+    "src": "lib/core/features/nav-collapse/index.ts",
+    "isDynamicEntry": true
+  },
+  "lib/core/features/package-request-delete/index.ts": {
+    "file": "core-feature-package-request-delete-CdkFBvtu.js",
+    "name": "package-request-delete",
+    "src": "lib/core/features/package-request-delete/index.ts",
+    "isDynamicEntry": true,
+    "imports": [
+      "_client-C_wHJOl3.js",
+      "_plain-GH5faqzX.js"
+    ]
+  },
+  "lib/core/features/space-protocol/index.ts": {
+    "file": "core-feature-space-protocol-DlLxOXqJ.js",
+    "name": "space-protocol",
+    "src": "lib/core/features/space-protocol/index.ts",
+    "isDynamicEntry": true
+  },
+  "lib/core/index.ts": {
+    "file": "core.js",
+    "name": "core",
+    "src": "lib/core/index.ts",
+    "isEntry": true,
+    "imports": [
+      "_i18n-D6k_RFjI.js"
+    ],
+    "dynamicImports": [
+      "lib/core/features/callback-headers/index.ts",
+      "lib/core/features/clipboard-field/index.ts",
+      "lib/core/features/location-replicators/index.ts",
+      "lib/core/features/modal/index.ts",
+      "lib/core/features/nav-collapse/index.ts",
+      "lib/core/features/package-request-delete/index.ts",
+      "lib/core/features/space-protocol/index.ts"
+    ]
+  },
+  "lib/location-directory-picker/index.ts": {
+    "file": "location-directory-picker.js",
+    "name": "location-directory-picker",
+    "src": "lib/location-directory-picker/index.ts",
+    "isEntry": true,
+    "imports": [
+      "_runtime-CsFmpt5v.js",
+      "_i18n-D6k_RFjI.js",
+      "_treeview-O_e403sy.js",
+      "_client-C_wHJOl3.js",
+      "__plugin-vue_export-helper-B3ysoDQm.js"
+    ]
+  },
+  "lib/shared/i18n/locales/en.json": {
+    "file": "locale-en-DfAwA3QL.js",
+    "name": "en",
+    "src": "lib/shared/i18n/locales/en.json",
+    "isDynamicEntry": true
+  },
+  "lib/shared/i18n/locales/es.json": {
+    "file": "locale-es-CWKgYXcf.js",
+    "name": "es",
+    "src": "lib/shared/i18n/locales/es.json",
+    "isDynamicEntry": true
+  },
+  "lib/shared/i18n/locales/fr.json": {
+    "file": "locale-fr-BfVle7Rw.js",
+    "name": "fr",
+    "src": "lib/shared/i18n/locales/fr.json",
+    "isDynamicEntry": true
+  },
+  "lib/shared/i18n/locales/ja.json": {
+    "file": "locale-ja-uobNDst3.js",
+    "name": "ja",
+    "src": "lib/shared/i18n/locales/ja.json",
+    "isDynamicEntry": true
+  },
+  "lib/shared/i18n/locales/no.json": {
+    "file": "locale-no-Bwmykkbt.js",
+    "name": "no",
+    "src": "lib/shared/i18n/locales/no.json",
+    "isDynamicEntry": true
+  },
+  "lib/shared/i18n/locales/pt-br.json": {
+    "file": "locale-pt-br-iTy-Hmy4.js",
+    "name": "pt-br",
+    "src": "lib/shared/i18n/locales/pt-br.json",
+    "isDynamicEntry": true
+  },
+  "lib/shared/i18n/locales/pt.json": {
+    "file": "locale-pt-FwEXt7z7.js",
+    "name": "pt",
+    "src": "lib/shared/i18n/locales/pt.json",
+    "isDynamicEntry": true
+  },
+  "lib/shared/i18n/locales/sv.json": {
+    "file": "locale-sv-paP7xrXx.js",
+    "name": "sv",
+    "src": "lib/shared/i18n/locales/sv.json",
+    "isDynamicEntry": true
+  },
+  "lib/tables/index.ts": {
+    "file": "tables.js",
+    "name": "tables",
+    "src": "lib/tables/index.ts",
+    "isEntry": true,
+    "imports": [
+      "_runtime-CsFmpt5v.js",
+      "_i18n-D6k_RFjI.js",
+      "_treeview-O_e403sy.js",
+      "__plugin-vue_export-helper-B3ysoDQm.js",
+      "_plain-GH5faqzX.js"
+    ]
+  },
+  "style.css": {
+    "file": "storage-service-frontend.css",
+    "src": "style.css"
+  }
+}

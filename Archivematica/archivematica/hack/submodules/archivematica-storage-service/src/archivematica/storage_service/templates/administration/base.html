@@ -1,0 +1,22 @@
+{% extends "base.html" %}
+{% load i18n %}
+
+{% block data_features_section %}clipboard-field{% endblock %}
+
+{% block sidebar %}
+<div class='span2 row sidebar'>
+  {% include 'snippets/administration_description.html' %}
+  <ul>
+    {% if perms.administration.change_settings %}
+      <li><a href="{% url 'administration:configuration' %}">{% trans "Configuration" %}</a></li>
+    {% endif %}
+    <li><a href="{% url 'administration:user_list' %}">{% trans "Users" %}</a></li>
+    <li><a href="{% url 'administration:version' %}">{% trans "Version" %}</a></li>
+    {% if perms.administration.change_settings %}
+      <li><a href="{% url 'locations:callback_list' %}">{% trans "Service callbacks" %}</a></li>
+      <li><a href="{% url 'administration:key_list' %}">{% trans "Encryption keys" %}</a></li>
+    {% endif %}
+    <li><a href="{% url 'administration:change_language' %}">{% trans "Language" %}</a></li>
+  </ul>
+</div>
+{% endblock sidebar %}

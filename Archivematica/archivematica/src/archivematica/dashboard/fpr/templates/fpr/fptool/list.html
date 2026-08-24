@@ -1,0 +1,22 @@
+{% extends "fpr/app_layout.html" %}
+{% load i18n %}
+
+{% block title %}{{ block.super }} - {% trans "Format policy registry tools" %}{% endblock title %}
+{% block page_title %}{% trans "Format policy registry tools" %}{% endblock page_title %}
+
+{% block breadcrumbs %}
+{{ block.super }}
+<li>{% trans "Format policy registry tools" %}</li>
+<li>{% trans "List" %}</li>
+{% endblock breadcrumbs %}
+
+{% block app_content %}
+
+
+    <div
+      class="fpr-vue-table"
+      data-fpr-table-root
+      data-fpr-table-script-id="fpr-fptool-list-payload"></div>
+    {{ fpr_table_payload|json_script:"fpr-fptool-list-payload" }}
+
+{% endblock app_content %}
