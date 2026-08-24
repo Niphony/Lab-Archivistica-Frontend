@@ -1,0 +1,23 @@
+# Ignore everything
+**
+
+# Include
+!/src/**
+!/.python-version
+!/pyproject.toml
+!/uv.lock
+!/LICENSE
+!/COPYRIGHT
+!/TRADEMARK
+
+# Exclude
+**/*~
+**/*.log
+**/node_modules
+**/Thumbs.db
+**/*.egg-info
+**/__pycache__/
+**/*.py[cod]
+**/.mypy_cache
+**/.ruff_cache
+src/archivematica/dashboard/frontend/dist

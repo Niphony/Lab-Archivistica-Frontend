@@ -1,0 +1,45 @@
+#!/usr/bin/env bash
+
+set -o errexit
+set -o pipefail
+set -o nounset
+
+__current_dir="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+__compose_dir="$(cd "$(dirname "${__current_dir}")" && pwd)"
+__root_dir="$(cd "$(dirname "${__compose_dir}")" && pwd)"
+
+cd ${__compose_dir}
+
+function dashboard::manage {
+	docker compose run \
+		--user=$(id -u):$(id -g) \
+		--rm --no-deps \
+		--workdir=/src/src/archivematica/dashboard \
+		--entrypoint=/src/src/archivematica/dashboard/manage.py \
+			archivematica-dashboard "$@"
+}
+
+function storage::manage {
+	docker compose run \
+		--user=$(id -u):$(id -g) \
+		--rm --no-deps \
+		--workdir=/src/src/archivematica/storage_service \
+		--entrypoint=/src/src/archivematica/storage_service/manage.py \
+			archivematica-storage-service "$@"
+}
+
+
+#
+# Dashboard
+#
+
+echo "Dashboard: compiling messages..."
+dashboard::manage compilemessages
+
+
+#
+# Storage Service
+#
+
+echo "Storage Service: compiling messages..."
+storage::manage compilemessages

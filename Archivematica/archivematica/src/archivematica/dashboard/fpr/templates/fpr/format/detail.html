@@ -1,0 +1,46 @@
+{% extends "fpr/app_layout.html" %}
+{% load i18n %}
+
+{% block title %}{{ block.super }} - {% blocktrans with description=format.description %}Format {{ description }}{% endblocktrans %}{% endblock title %}
+{% block page_title %}{% blocktrans with description=format.description %}Format {{ description }}{% endblocktrans %}{% endblock page_title %}
+
+{% block breadcrumbs %}
+  {{ block.super }}
+  <li><a href="{% url 'fpr:format_list' %}">{% trans "Formats" %}</a></li>
+  <li>{{ format.description }}</li>
+{% endblock breadcrumbs %}
+
+{% block app_content %}
+
+
+    <div class='format'>
+        <dl>
+            <dt>{% trans "UUID" %}</dt>
+              <dd>{{ format.uuid }}</dd>
+            <dt>{% trans "Description" %}</dt>
+              <dd>{{ format.description }}</dd>
+            <dt>{% trans "Group" %}</dt>
+              <dd>
+                {% if request.user.is_superuser %}
+                  <a href="{% url 'fpr:formatgroup_edit' format.group.slug %}">{{ format.group }}</a>
+                {% else %}
+                  {{ format.group }}
+                {% endif %}
+              </dd>
+        </dl>
+    </div>
+    {% if request.user.is_superuser %}
+      <div class="well well-sm">
+        <a class="btn btn-default btn-sm" href="{% url 'fpr:format_edit' format.slug %}">{% trans "Edit" %}</a>
+      </div>
+    {% endif %}
+
+    <h3>{% trans "Specific versions" %}</h3>
+
+    <div
+      class="fpr-vue-table"
+      data-fpr-table-root
+      data-fpr-table-script-id="fpr-format-detail-versions-payload"></div>
+    {{ fpr_table_payload|json_script:"fpr-format-detail-versions-payload" }}
+
+{% endblock app_content %}

@@ -1,0 +1,110 @@
+{% load static %}
+{% load i18n %}
+{% load lang %}
+{% load user %}
+{% logout_link as logout_url %}
+{% get_current_language as LANGUAGE_CODE %}
+{% get_current_language_bidi as LANGUAGE_BIDI %}
+
+<!DOCTYPE html>
+<html lang="{{ LANGUAGE_CODE }}" {% if LANGUAGE_BIDI %}dir="rtl"{% endif %}>
+  <head>
+    <meta charset="utf-8">
+    <title>{% block title %}{% trans "Archivematica Storage Service" %}{% endblock title %}</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="">
+    <meta name="author" content="">
+
+    <!-- Le styles -->
+    <link href="{% static 'css/bootstrap.min.css' %}" rel="stylesheet">
+    <style>
+      body {
+        padding-top: 60px; /* 60px to make the container go all the way to the bottom of the topbar */
+      }
+    </style>
+    <link href="{% static 'css/bootstrap-responsive.min.css' %}" rel="stylesheet">
+
+
+    <!-- This file store project specific CSS -->
+    <link href="{% static 'css/project.css' %}" rel="stylesheet">
+    <link href="{% static 'frontend/storage-service-frontend.css' %}" rel="stylesheet" type="text/css" />
+
+    <!-- Use this to quickly test CSS changes in a template,
+        then move to project.css -->
+    {% block extra_css %}{% endblock extra_css %}
+
+    <script type="text/javascript">
+      window.StorageServiceConfig = {
+        'currentLanguage': '{{ LANGUAGE_CODE|standardize_lang_code }}'
+      };
+    </script>
+  </head>
+
+  <body data-features="nav-collapse,{% block data_features_section %}{% endblock %},{% block data_features_page %}{% endblock %}">
+
+    <div class="navbar navbar-inverse navbar-fixed-top">
+      <div class="navbar-inner">
+        <div class="container">
+          <button
+            class="btn btn-navbar"
+            type="button"
+            data-am-toggle="collapse"
+            data-am-target="#main-navigation"
+            aria-controls="main-navigation"
+            aria-expanded="false"
+          >
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+            <span class="icon-bar"></span>
+          </button>
+          <a class="brand" href="#">{% trans "Archivematica Storage Service" %}</a>
+          <div id="main-navigation" class="nav-collapse collapse">
+            <ul class="nav">
+              <li {% if request.path == '/' %}class="active"{% endif %}><a href="/">{% trans "Home" %}</a></li>
+              <li {% if '/pipeline' in request.path %}class="active"{% endif %}><a href="{% url 'locations:pipeline_list' %}">{% trans "Pipelines" %}</a></li>
+              <li {% if '/space' in request.path %}class="active"{% endif %}><a href="{% url 'locations:space_list' %}">{% trans "Spaces" %}</a></li>
+              <li {% if '/location' in request.path %}class="active"{% endif %}><a href="{% url 'locations:location_list' %}">{% trans "Locations" %}</a></li>
+              <li {% if '/package' in request.path %}class="active"{% endif %}><a href="{% url 'locations:package_list' %}">{% trans "Packages" %}</a></li>
+              <li {% if '/administration' in request.path or '/callbacks' in request.path %}class="active"{% endif %}><a href="{% url 'administration:index' %}">{% trans "Administration" %}</a></li>
+              {% if user.is_authenticated %}
+              <li>
+                <form method="post" action="{{ logout_url }}">
+                  {% csrf_token %}
+                  <button type="submit">{% trans "Log out" %}</button>
+                </form>
+              </li>
+              {% endif %}
+            </ul>
+          </div><!--/.nav-collapse -->
+        </div>
+      </div>
+    </div>
+
+    {% block body %}
+      <div class="container">
+        {% block sidebar %}{% endblock sidebar %}
+
+        <div class="row">
+          <h1>{% block page_title %}{% trans "Archivematica Storage Service" %}{% endblock page_title %}</h1>
+
+          {% for message in messages %}
+            <div class='alert alert-{{message.tags}}'>{{ message }}</div>
+          {% endfor %}
+
+          {% block content %}{% endblock content %}
+        </div>
+      </div> <!-- /container -->
+    {% endblock %}
+
+    <!-- Le javascript
+    ================================================== -->
+    <!-- Placed at the end of the document so the pages load faster -->
+    <!-- i18js catalog -->
+    <script type="text/javascript" src="{% url 'javascript-catalog' %}"></script>
+
+    <script type="module" src="{% static 'frontend/tables.js' %}"></script>
+    <script type="module" src="{% static 'frontend/core.js' %}"></script>
+
+    {% block extra_js %}{% endblock extra_js %}
+  </body>
+</html>

@@ -1,0 +1,806 @@
+import logging
+
+from django.conf import settings
+from django.contrib import messages
+from django.contrib.auth.decorators import permission_required
+from django.db.models import Q
+from django.forms.models import model_to_dict
+from django.http import HttpRequest
+from django.http import HttpResponse
+from django.http import JsonResponse
+from django.middleware.csrf import get_token
+from django.shortcuts import get_object_or_404
+from django.shortcuts import redirect
+from django.shortcuts import render
+from django.urls import reverse
+from django.utils.translation import gettext as _
+from django.views.decorators.http import require_http_methods
+
+from archivematica.storage_service.common import decorators
+from archivematica.storage_service.common import gpgutils
+from archivematica.storage_service.common import utils
+from archivematica.storage_service.locations import datatable_rows
+from archivematica.storage_service.locations import datatable_utils
+from archivematica.storage_service.locations import forms
+from archivematica.storage_service.locations import package_request
+from archivematica.storage_service.locations import signals
+from archivematica.storage_service.locations import table_payloads
+from archivematica.storage_service.locations.constants import PROTOCOL
+from archivematica.storage_service.locations.models import GPG
+from archivematica.storage_service.locations.models import Callback
+from archivematica.storage_service.locations.models import Event
+from archivematica.storage_service.locations.models import FixityLog
+from archivematica.storage_service.locations.models import Location
+from archivematica.storage_service.locations.models import LocationPipeline
+from archivematica.storage_service.locations.models import Package
+from archivematica.storage_service.locations.models import Pipeline
+from archivematica.storage_service.locations.models import Space
+
+LOGGER = logging.getLogger(__name__)
+
+
+# ######################## HELPERS ##########################
+
+
+def get_delete_context_dict(request, model, object_uuid, default_cancel="/"):
+    """Returns a dict of the values needed by the confirm delete view."""
+    obj = get_object_or_404(model, uuid=object_uuid)
+    header = _("Confirm deleting %(item)s") % {"item": model._meta.verbose_name}
+    dependent_objects = utils.dependent_objects(obj)
+    if dependent_objects:
+        prompt = _(
+            "%(item)s cannot be deleted until the following items are also deleted or unassociated."
+        ) % {"item": obj}
+    else:
+        prompt = _("Are you sure you want to delete {item}?") % {"item": obj}
+    cancel_url = request.GET.get("next", default_cancel)
+    return {
+        "header": header,
+        "dependent_objects": dependent_objects,
+        "prompt": prompt,
+        "cancel_url": cancel_url,
+    }
+
+
+# ######################## FILES ##########################
+
+
+def package_list(request):
+    context = {
+        "package_count": Package.objects.count(),
+        "packages_table_payload": table_payloads.packages_server_payload(
+            endpoint=reverse("locations:package_list_ajax")
+        ),
+    }
+    return render(request, "locations/package_list.html", context)
+
+
+def package_list_ajax(request: HttpRequest) -> HttpResponse:
+    datatable = datatable_utils.PackageDataTable(request.GET)
+    csrf_token = get_token(request)
+    can_change_package = request.user.has_perm("locations.change_package")
+    can_delete_package = request.user.has_perm("locations.delete_package")
+    redirect_path = request.headers.get("referer", request.path)
+    data = [
+        datatable_rows.build_package_row_payload(
+            package,
+            redirect_path=redirect_path,
+            csrf_token=csrf_token,
+            can_change_package=can_change_package,
+            can_delete_package=can_delete_package,
+        )
+        for package in datatable.records
+    ]
+    # these are the values that DataTables expects from the server
+    # see "Reply from the server" in http://legacy.datatables.net/usage/server-side
+    response = {
+        "iTotalRecords": datatable.total_records,
+        "iTotalDisplayRecords": datatable.total_display_records,
+        "sEcho": datatable.echo,
+        "aaData": data,
+    }
+    return JsonResponse(status=200, data=response)
+
+
+@permission_required("locations.change_package", raise_exception=True)
+def package_fixity(request, package_uuid):
+    log_entries = FixityLog.objects.filter(package__uuid=package_uuid).order_by(
+        "-datetime_reported"
+    )
+    context = {
+        "log_entries": log_entries,
+        "package_uuid": package_uuid,
+        "fixity_logs_table_payload": table_payloads.fixity_logs_server_payload(
+            endpoint=reverse("locations:fixity_logs_ajax"),
+            package_uuid=package_uuid,
+        ),
+    }
+    return render(request, "locations/fixity_results.html", context)
+
+
+def fixity_logs_ajax(request: HttpRequest) -> HttpResponse:
+    datatable = datatable_utils.FixityLogDataTable(request.GET)
+    data = [
+        datatable_rows.build_fixity_log_row_payload(fixity_log)
+        for fixity_log in datatable.records
+    ]
+    # these are the values that DataTables expects from the server
+    # see "Reply from the server" in http://legacy.datatables.net/usage/server-side
+    response = {
+        "iTotalRecords": datatable.total_records,
+        "iTotalDisplayRecords": datatable.total_display_records,
+        "sEcho": datatable.echo,
+        "aaData": data,
+    }
+    return JsonResponse(status=200, data=response)
+
+
+@permission_required("locations.change_package", raise_exception=True)
+def aip_recover_request(request):
+    """Lists existing AIP recover requests."""
+
+    config = package_request.PackageRecoveryRequestHandlerConfig()
+
+    return _handle_package_request(request, config, "locations:aip_recover_request")
+
+
+@permission_required("locations.delete_package", raise_exception=True)
+@require_http_methods(["POST"])
+def package_delete(request, uuid):
+    """Delete packages without extra approval requirement.
+
+    This is limited to packages listed in
+    ``PACKAGE_TYPE_CAN_DELETE_DIRECTLY``.
+    """
+    package = get_object_or_404(Package, uuid=uuid)
+    package_list_url = reverse("locations:package_list")
+
+    def respond(tag, message):
+        try:
+            message_method = getattr(messages, tag)
+        except AttributeError:
+            return
+        message_method(request, message)
+        return redirect(package_list_url)
+
+    if package.package_type not in package.PACKAGE_TYPE_CAN_DELETE_DIRECTLY:
+        return respond(
+            "error",
+            _(
+                "Package of type %(type)s cannot be deleted"
+                " directly" % {"type": package.package_type}
+            ),
+        )
+    errmsg = _(
+        "Package deletion failed. Please contact an administrator or"
+        " see logs for details."
+    )
+    try:
+        ok, err = package.delete_from_storage()
+    except Exception:
+        LOGGER.exception("Package deletion failed")
+        return respond("error", errmsg)
+    if not ok:
+        LOGGER.error("Package deletion failed: %s", err)
+        return respond("error", errmsg)
+    return respond("success", _("Package deleted successfully!"))
+
+
+@permission_required("locations.approve_package_deletion", raise_exception=True)
+def package_delete_request(request):
+    config = package_request.PackageDeletionRequestHandlerConfig()
+
+    return _handle_package_request(request, config, "locations:package_delete_request")
+
+
+@require_http_methods(["POST"])
+def package_request_deletion(request: HttpRequest, uuid: str) -> HttpResponse:
+    if not request.user.is_authenticated:
+        return JsonResponse(
+            status=403,
+            data={"message": _("Authentication is required.")},
+        )
+
+    if not request.user.has_perm("locations.change_package"):
+        return JsonResponse(
+            status=403,
+            data={
+                "message": _("You do not have permission to request package deletion.")
+            },
+        )
+
+    if request.user.id is None:
+        return JsonResponse(
+            status=400,
+            data={"message": _("Package deletion request failed.")},
+        )
+
+    package = get_object_or_404(Package, uuid=uuid)
+
+    if package.package_type not in Package.PACKAGE_TYPE_CAN_DELETE:
+        return JsonResponse(
+            status=405,
+            data={"message": _("Deletes not allowed on this package type.")},
+        )
+
+    if package.origin_pipeline is None:
+        return JsonResponse(
+            status=400,
+            data={"message": _("Package deletion request failed.")},
+        )
+
+    request_info = {
+        "event_reason": _(
+            "Storage Service user wants to delete %(package_type)s %(package_uuid)s."
+        )
+        % {"package_type": package.package_type, "package_uuid": package.uuid},
+        "pipeline": package.origin_pipeline,
+        "user_id": request.user.id,
+        "user_email": request.user.email,
+    }
+
+    config = package_request.PackageDeletionRequestHandlerConfig()
+    submission_result = package_request.submit_package_request_event(
+        config,
+        package,
+        request_info=request_info,
+    )
+
+    if submission_result.created:
+        site_url = getattr(settings, "SITE_BASE_URL", None)
+        signals.deletion_request.send(
+            sender=package_request_deletion,
+            url=site_url,
+            uuid=package.uuid,
+            location=package.full_path,
+            pipeline=str(package.origin_pipeline.uuid),
+        )
+        return JsonResponse(
+            status=202,
+            data={
+                "message": _("%(event_type)s request created successfully.")
+                % {"event_type": config.request_description.title()}
+            },
+        )
+
+    return JsonResponse(
+        status=200,
+        data={"message": _("A deletion request already exists for this AIP.")},
+    )
+
+
+def _handle_package_request(
+    request: HttpRequest,
+    config: package_request.PackageRequestHandlerConfig,
+    view_name: str,
+) -> HttpResponse:
+    request_events = Event.objects.filter(status=Event.SUBMITTED).filter(
+        event_type=config.event_type
+    )
+    row_states: dict[int, table_payloads.DecisionFormState] = {}
+
+    if request.method == "POST":
+        event_id_value = request.POST.get(table_payloads.EVENT_ID_FIELD_NAME)
+        reason_value = request.POST.get(table_payloads.STATUS_REASON_FIELD_NAME, "")
+
+        try:
+            event_id = int(event_id_value) if event_id_value is not None else None
+        except ValueError:
+            event_id = None
+
+        if event_id is None:
+            messages.error(
+                request, _("A pending package request identifier is required.")
+            )
+        else:
+            event = request_events.filter(id=event_id).first()
+            if event is None:
+                messages.error(
+                    request, _("The selected package request is no longer pending.")
+                )
+            else:
+                form = forms.ConfirmEventForm(request.POST, instance=event)
+                if not form.is_valid():
+                    row_states[event.id] = {
+                        "reason_value": reason_value,
+                        "reason_errors": [
+                            str(error) for error in form.errors.get("status_reason", [])
+                        ],
+                    }
+                else:
+                    decision_value = request.POST.get(
+                        table_payloads.DECISION_FIELD_NAME
+                    )
+                    try:
+                        decision, reason = package_request.parse_decision_and_reason(
+                            decision_value, form.cleaned_data["status_reason"]
+                        )
+                    except package_request.PackageRequestValidationError as error:
+                        messages.error(request, str(error.message))
+                        row_states[event.id] = {
+                            "reason_value": reason_value,
+                        }
+                    else:
+                        result = package_request.process_package_request_decision(
+                            config, event, decision, reason=reason, admin=request.user
+                        )
+
+                        message_payload = result.message
+                        message_method = getattr(messages, message_payload.level, None)
+                        if message_method is not None:
+                            message_method(request, message_payload.content)
+                        if result.message.detail:
+                            messages.info(request, result.message.detail)
+
+                        return redirect(view_name)
+
+    closed_requests = Event.objects.filter(
+        Q(status=Event.APPROVED) | Q(status=Event.REJECTED)
+    )
+
+    status_reason_form = forms.ConfirmEventForm()
+    status_reason_field = status_reason_form.fields["status_reason"]
+    status_reason_label = str(status_reason_field.label or "")
+    label_suffix = str(status_reason_form.label_suffix or "")
+    if label_suffix and not status_reason_label.endswith(label_suffix):
+        status_reason_label = f"{status_reason_label}{label_suffix}"
+    if not status_reason_label.endswith(":"):
+        status_reason_label = f"{status_reason_label}:"
+    pending_requests_table_payload = table_payloads.package_requests_pending_payload(
+        request_events,
+        include_decision=request.user.has_perm("locations.approve_package_deletion"),
+        form_action=reverse(view_name),
+        csrf_token=get_token(request),
+        reason_label=status_reason_label,
+        approve_label=_("Approve (%(action)s package)")
+        % {"action": config.event_type.title()},
+        reject_label=_("Reject (No change to package)"),
+        row_states=row_states,
+    )
+    closed_requests_table_payload = table_payloads.package_requests_closed_payload(
+        closed_requests
+    )
+
+    return render(request, "locations/package_request.html", locals())
+
+
+@permission_required("locations.change_package", raise_exception=True)
+def package_update_status(request, uuid):
+    package = Package.objects.get(uuid=uuid)
+
+    old_status = package.status
+    try:
+        (new_status, error) = package.current_location.space.update_package_status(
+            package
+        )
+    except Exception:
+        LOGGER.exception("update status")
+        new_status = None
+        error = _("Error getting status for package %(uuid)s") % {"uuid": uuid}
+
+    if new_status is not None:
+        if old_status != new_status:
+            messages.info(
+                request,
+                _("Status for package %(package)s is now %(status)s'.")
+                % {"package": uuid, "status": package.get_status_display()},
+            )
+        else:
+            messages.info(
+                request,
+                _("Status for package %(uuid)s has not changed.") % {"uuid": uuid},
+            )
+
+    if error:
+        messages.warning(request, error)
+
+    next_url = request.GET.get("next", reverse("locations:package_list"))
+    return redirect(next_url)
+
+
+@permission_required("locations.change_package", raise_exception=True)
+def aip_reingest(request, package_uuid):
+    next_url = request.GET.get("next", reverse("locations:package_list"))
+    try:
+        package = Package.objects.get(uuid=package_uuid)
+    except Package.DoesNotExist:
+        messages.warning(
+            request,
+            _("Package with UUID %(uuid)s does not exist.") % {"uuid": package_uuid},
+        )
+        return redirect(next_url)
+    if package.replicated_package:
+        messages.warning(
+            request,
+            _("Package %(uuid)s is a replica and replicas cannot be re-ingested.")
+            % {"uuid": package_uuid},
+        )
+        return redirect(next_url)
+    form = forms.ReingestForm(request.POST or None)
+    if form.is_valid():
+        pipeline = form.cleaned_data["pipeline"]
+        reingest_type = form.cleaned_data["reingest_type"]
+        processing_config = form.cleaned_data.get("processing_config", "default")
+        response = package.start_reingest(pipeline, reingest_type, processing_config)
+        error = response.get("error", True)
+        message = response.get("message", _("An unknown error occurred"))
+        if not error:
+            if message:
+                messages.success(request, message)
+        else:
+            messages.warning(request, message)
+        return redirect(next_url)
+    return render(request, "locations/package_reingest.html", locals())
+
+
+# ####################### LOCATIONS ##########################
+
+
+@permission_required("locations.change_location", raise_exception=True)
+def location_edit(request, space_uuid, location_uuid=None):
+    space = get_object_or_404(Space, uuid=space_uuid)
+    if location_uuid:
+        action = _("Edit Location")
+        location = get_object_or_404(Location, uuid=location_uuid)
+    else:
+        action = _("Create Location")
+        location = None
+    form = forms.LocationForm(
+        request.POST or None, space_protocol=space.access_protocol, instance=location
+    )
+
+    if form.is_valid():
+        location = form.save(commit=False)
+        location.space = space
+        location.save()
+        # Cannot use form.save_m2m() because of 'through' table
+        for pipeline in form.cleaned_data["pipeline"]:
+            LocationPipeline.objects.get_or_create(location=location, pipeline=pipeline)
+        location.replicators.clear()
+        for replicator_loc in form.cleaned_data["replicators"]:
+            location.replicators.add(replicator_loc)
+        # Delete relationships between the location and pipelines not in the form
+        to_delete = LocationPipeline.objects.filter(location=location).exclude(
+            pipeline__in=list(form.cleaned_data["pipeline"])
+        )
+        # NOTE Need to convert form.cleaned_data['pipeline'] to a list, or the
+        # SQL generated by pipeline__in is garbage in Django 1.5.
+        LOGGER.debug("LocationPipeline to delete: %s", to_delete)
+        to_delete.delete()
+        messages.success(request, _("Location saved."))
+        # TODO make this return to the originating page
+        # http://stackoverflow.com/questions/4203417/django-how-do-i-redirect-to-page-where-form-originated
+        return redirect("locations:location_detail", location.uuid)
+    return render(request, "locations/location_form.html", locals())
+
+
+def location_list(request):
+    locations = Location.objects.all()
+    locations_table_payload = table_payloads.locations_list_payload(request, locations)
+    return render(request, "locations/location_list.html", locals())
+
+
+def location_detail(request, location_uuid):
+    try:
+        location = Location.objects.get(uuid=location_uuid)
+    except Location.DoesNotExist:
+        messages.warning(
+            request, _("Location %(uuid)s does not exist.") % {"uuid": location_uuid}
+        )
+        return redirect("locations:location_list")
+    pipelines = Pipeline.objects.filter(location=location)
+    package_count = Package.objects.filter(current_location=location).count()
+    pipelines_table_payload = table_payloads.pipeline_list_payload(request, pipelines)
+    packages_table_payload = table_payloads.packages_server_payload(
+        endpoint=reverse("locations:package_list_ajax"),
+        location_uuid=str(location.uuid),
+    )
+    return render(request, "locations/location_detail.html", locals())
+
+
+def location_switch_enabled(request, location_uuid):
+    location = get_object_or_404(Location, uuid=location_uuid)
+    location.enabled = not location.enabled
+    location.save()
+    next_url = request.GET.get(
+        "next", reverse("locations:location_detail", args=[location.uuid])
+    )
+    return redirect(next_url)
+
+
+def location_delete_context(request, location_uuid):
+    return get_delete_context_dict(
+        request, Location, location_uuid, reverse("locations:location_list")
+    )
+
+
+@permission_required("locations.delete_location", raise_exception=True)
+@decorators.confirm_required("locations/delete.html", location_delete_context)
+def location_delete(request, location_uuid):
+    location = get_object_or_404(Location, uuid=location_uuid)
+    location.delete()
+    next_url = request.GET.get("next", reverse("locations:location_list"))
+    return redirect(next_url)
+
+
+# ######################## PIPELINES ##########################
+
+
+@permission_required("locations.change_pipeline", raise_exception=True)
+def pipeline_edit(request, uuid=None):
+    if uuid:
+        action = _("Edit Pipeline")
+        pipeline = get_object_or_404(Pipeline, uuid=uuid)
+        initial = {}
+    else:
+        action = _("Create Pipeline")
+        pipeline = None
+        initial = {
+            "create_default_locations": True,
+            "enabled": not utils.get_setting("pipelines_disabled"),
+        }
+
+    if request.method == "POST":
+        form = forms.PipelineForm(request.POST, instance=pipeline, initial=initial)
+        if form.is_valid():
+            pipeline = form.save()
+            pipeline.save(form.cleaned_data["create_default_locations"])
+            messages.success(request, _("Pipeline saved."))
+            return redirect("locations:pipeline_list")
+    else:
+        form = forms.PipelineForm(instance=pipeline, initial=initial)
+    return render(
+        request,
+        "locations/pipeline_form.html",
+        {
+            "action": action,
+            "form": form,
+            "pipeline": pipeline,
+        },
+    )
+
+
+def pipeline_list(request):
+    pipelines = Pipeline.objects.all()
+    pipelines_table_payload = table_payloads.pipeline_list_payload(request, pipelines)
+    return render(request, "locations/pipeline_list.html", locals())
+
+
+def pipeline_detail(request, uuid):
+    try:
+        pipeline = Pipeline.objects.get(uuid=uuid)
+    except Pipeline.DoesNotExist:
+        messages.warning(
+            request, _("Pipeline %(uuid)s does not exist.") % {"uuid": uuid}
+        )
+        return redirect("locations:pipeline_list")
+    locations = Location.objects.filter(pipeline=pipeline)
+    locations_table_payload = table_payloads.locations_list_payload(
+        request,
+        locations,
+        include_pipeline=False,
+    )
+    return render(request, "locations/pipeline_detail.html", locals())
+
+
+def pipeline_switch_enabled(request, uuid):
+    pipeline = get_object_or_404(Pipeline, uuid=uuid)
+    pipeline.enabled = not pipeline.enabled
+    pipeline.save()
+    next_url = request.GET.get(
+        "next", reverse("locations:pipeline_detail", args=[pipeline.uuid])
+    )
+    return redirect(next_url)
+
+
+def pipeline_delete_context(request, uuid):
+    return get_delete_context_dict(
+        request, Pipeline, uuid, reverse("locations:pipeline_list")
+    )
+
+
+@permission_required("locations.delete_pipeline", raise_exception=True)
+@decorators.confirm_required("locations/delete.html", pipeline_delete_context)
+def pipeline_delete(request, uuid):
+    pipeline = get_object_or_404(Pipeline, uuid=uuid)
+    pipeline.delete()
+    next_url = request.GET.get("next", reverse("locations:pipeline_list"))
+    return redirect(next_url)
+
+
+# ######################## SPACES ##########################
+
+
+def space_list(request):
+    spaces = Space.objects.all()
+
+    def add_child(space):
+        model = PROTOCOL[space.access_protocol]["model"]
+        child = model.objects.get(space=space)
+        child_dict_raw = model_to_dict(
+            child, PROTOCOL[space.access_protocol]["fields"] or [""]
+        )
+        child_dict = get_child_space_dict(child, child_dict_raw)
+        space.child = child_dict
+
+    list(map(add_child, spaces))
+    return render(request, "locations/space_list.html", locals())
+
+
+def space_detail(request, uuid):
+    try:
+        space = Space.objects.get(uuid=uuid)
+    except Space.DoesNotExist:
+        messages.warning(request, _("Space %(uuid)s does not exist.") % {"uuid": uuid})
+        return redirect("locations:space_list")
+    child = space.get_child_space()
+
+    child_dict_raw = model_to_dict(
+        child, PROTOCOL[space.access_protocol]["fields"] or [""]
+    )
+    child_dict = get_child_space_dict(child, child_dict_raw)
+    space.child = child_dict
+    locations = Location.objects.filter(space=space)
+    locations_table_payload = table_payloads.locations_list_payload(
+        request,
+        locations,
+        include_space=False,
+    )
+    return render(request, "locations/space_detail.html", locals())
+
+
+def get_child_space_dict(child, child_dict_raw):
+    return {
+        get_child_space_label(child, field): get_child_space_value(value, field, child)
+        for field, value in child_dict_raw.items()
+    }
+
+
+def get_child_space_label(child, field):
+    if field == "key" and isinstance(child, GPG):
+        return _("Keyid")
+    return child._meta.get_field(field).verbose_name
+
+
+def get_child_space_value(value, field, child):
+    """Show shorter Key ID instead of full fingerprint for GPG keys."""
+    if field == "key" and isinstance(child, GPG):
+        key = gpgutils.get_gpg_key(value)
+        return (key or {}).get("keyid", _("Keyid not found"))
+    return value
+
+
+@permission_required("locations.add_space", raise_exception=True)
+def space_create(request):
+    if request.method == "POST":
+        space_form = forms.SpaceForm(request.POST, prefix="space")
+        if space_form.is_valid():
+            # Get access protocol form to validate
+            access_protocol = space_form.cleaned_data["access_protocol"]
+            protocol_form = PROTOCOL[access_protocol]["form"](
+                request.POST, prefix="protocol"
+            )
+            if protocol_form.is_valid():
+                # If both are valid, save everything
+                space = space_form.save()
+                protocol_obj = protocol_form.save(commit=False)
+                protocol_obj.space = space
+                protocol_obj.save()
+                messages.success(request, _("Space saved."))
+                return redirect("locations:space_detail", space.uuid)
+        else:
+            # We need to return the protocol_form so that protocol_form errors
+            # are displayed, and so the form doesn't mysterious disappear
+            # See if access_protocol has been set
+            access_protocol = space_form["access_protocol"].value()
+            if access_protocol:
+                protocol_form = PROTOCOL[access_protocol]["form"](
+                    request.POST, prefix="protocol"
+                )
+    else:
+        space_form = forms.SpaceForm(prefix="space")
+
+    return render(request, "locations/space_form.html", locals())
+
+
+@permission_required("locations.change_space", raise_exception=True)
+def space_edit(request, uuid):
+    space = get_object_or_404(Space, uuid=uuid)
+    protocol_space = space.get_child_space()
+    space_form = forms.SpaceForm(request.POST or None, prefix="space", instance=space)
+    protocol_form = PROTOCOL[space.access_protocol]["form"](
+        request.POST or None, prefix="protocol", instance=protocol_space
+    )
+    if space_form.is_valid() and protocol_form.is_valid():
+        space_form.save()
+        protocol_form.save()
+        messages.success(request, _("Space saved."))
+        return redirect("locations:space_detail", space.uuid)
+    return render(request, "locations/space_edit.html", locals())
+
+
+@permission_required("locations.change_space", raise_exception=True)
+def ajax_space_create_protocol_form(request):
+    """Return a protocol-specific form, based on the input protocol."""
+    sent_protocol = request.GET.get("protocol")
+    try:
+        # Get form class if it exists
+        form_class = PROTOCOL[sent_protocol]["form"]
+    except KeyError:
+        response_data = {}
+    else:
+        # Create and return the form
+        form = form_class(prefix="protocol")
+        response_data = form.as_p()
+    return HttpResponse(response_data, content_type="text/html")
+
+
+def space_delete_context(request, uuid):
+    return get_delete_context_dict(
+        request, Space, uuid, reverse("locations:space_list")
+    )
+
+
+@permission_required("locations.delete_space", raise_exception=True)
+@decorators.confirm_required("locations/delete.html", space_delete_context)
+def space_delete(request, uuid):
+    space = get_object_or_404(Space, uuid=uuid)
+    space.delete()
+    next_url = request.GET.get("next", reverse("locations:space_list"))
+    return redirect(next_url)
+
+
+# ######################## CALLBACKS ##########################
+
+
+def callback_detail(request, uuid):
+    try:
+        callback = Callback.objects.get(uuid=uuid)
+    except Callback.DoesNotExist:
+        messages.warning(
+            request, _("Callback %(uuid)s does not exist.") % {"uuid": uuid}
+        )
+        return redirect("locations:callback_list")
+    return render(request, "locations/callback_detail.html", locals())
+
+
+@permission_required("locations.change_callback", raise_exception=True)
+def callback_switch_enabled(request, uuid):
+    callback = get_object_or_404(Callback, uuid=uuid)
+    callback.enabled = not callback.enabled
+    callback.save()
+    next_url = request.GET.get(
+        "next", reverse("locations:callback_detail", args=[callback.uuid])
+    )
+    return redirect(next_url)
+
+
+def callback_list(request):
+    callbacks = Callback.objects.all()
+    callbacks_table_payload = table_payloads.callback_list_payload(request, callbacks)
+    return render(request, "locations/callback_list.html", locals())
+
+
+@permission_required("locations.change_callback", raise_exception=True)
+def callback_edit(request, uuid=None):
+    if uuid:
+        action = _("Edit Callback")
+        callback = get_object_or_404(Callback, uuid=uuid)
+    else:
+        action = _("Create Callback")
+        callback = None
+
+    form = forms.CallbackForm(request.POST or None, instance=callback)
+    if form.is_valid():
+        callback = form.save()
+        messages.success(request, _("Callback saved."))
+        return redirect("locations:callback_detail", callback.uuid)
+    return render(request, "locations/callback_form.html", locals())
+
+
+@permission_required("locations.delete_callback", raise_exception=True)
+def callback_delete(request, uuid):
+    callback = get_object_or_404(Callback, uuid=uuid)
+    callback.delete()
+    next_url = request.GET.get("next", reverse("locations:callback_list"))
+    return redirect(next_url)

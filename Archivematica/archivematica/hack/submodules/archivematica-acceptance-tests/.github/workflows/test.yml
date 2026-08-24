@@ -1,0 +1,93 @@
+---
+name: "Test"
+on:
+  workflow_dispatch:
+  pull_request:
+  push:
+    branches:
+      - "qa/**"
+      - "stable/**"
+jobs:
+  test-virtualenv:
+    name: "Test Python ${{ matrix.python-version }} (virtualenv)"
+    runs-on: "ubuntu-24.04"
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [
+          "3.10",
+          "3.11",
+          "3.12",
+          "3.13",
+          "3.14",
+        ]
+    steps:
+      - name: "Check out repository"
+        uses: "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1" # v7.0.1
+      - name: "Set up uv and Python"
+        uses: "astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d" # v10.0.1
+        with:
+          python-version: "${{ matrix.python-version }}"
+          enable-cache: true
+          cache-python: true
+          cache-dependency-glob: |
+            uv.lock
+          cache-suffix: "test-${{ matrix.python-version }}"
+      - name: "Run test"
+        env:
+          UV_PYTHON: "${{ matrix.python-version }}"
+        run: |
+          make smoke-test
+  test-docker:
+    name: "Test Python ${{ matrix.python-version }} (docker)"
+    runs-on: "ubuntu-24.04"
+    strategy:
+      fail-fast: false
+      matrix:
+        python-version: [
+          "3.10",
+          "3.11",
+          "3.12",
+          "3.13",
+          "3.14",
+        ]
+    steps:
+      - name: "Check out repository"
+        uses: "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1" # v7.0.1
+      - name: "Set up buildx"
+        uses: "docker/setup-buildx-action@bb05f3f5519dd87d3ba754cc423b652a5edd6d2c" # v4.2.0
+      - name: "Build the archivematica-acceptance-tests image"
+        uses: "docker/build-push-action@53b7df96c91f9c12dcc8a07bcb9ccacbed38856a" # v7.3.0
+        with:
+          target: "archivematica-acceptance-tests"
+          build-args: |
+            PYTHON_VERSION=${{ matrix.python-version }}
+          tags: "archivematica-acceptance-tests:latest"
+          push: false
+          load: true
+          cache-from: "type=gha,scope=archivematica-acceptance-tests-${{ matrix.python-version }}"
+          cache-to: "type=gha,scope=archivematica-acceptance-tests-${{ matrix.python-version }},mode=max"
+      - name: "Run test"
+        run: |
+          docker run \
+            --rm \
+            --security-opt="seccomp=unconfined" \
+            archivematica-acceptance-tests \
+            /home/artefactual/acceptance-tests/simplebrowsertest.py
+  lint:
+    name: "Lint"
+    runs-on: "ubuntu-24.04"
+    steps:
+      - name: "Check out repository"
+        uses: "actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1" # v7.0.1
+      - name: "Set up uv and Python"
+        uses: "astral-sh/setup-uv@20cfd1bf945f4377ade1205e4dbc17946fc9a30d" # v10.0.1
+        with:
+          enable-cache: true
+          cache-python: true
+          cache-dependency-glob: |
+            uv.lock
+          cache-suffix: "lint"
+      - name: "Run checks"
+        run: |
+          make check

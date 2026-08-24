@@ -1,0 +1,5 @@
+{% load i18n %}
+<div
+  data-table-root
+  data-table-script-id="tables-pipelines-table-payload"></div>
+{{ pipelines_table_payload|json_script:"tables-pipelines-table-payload" }}

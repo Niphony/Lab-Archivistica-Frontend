@@ -1,0 +1,40 @@
+{% extends "layout.html" %}
+{% load breadcrumb %}
+{% load i18n %}
+{% load static %}
+
+{% block title %}{% trans "AIP" %}{% endblock %}
+{% block h1 %}{% trans "AIP" %}{% endblock %}
+{% block page_id %}aip{% endblock %}
+
+{% block js %}
+  <script type="module" src="{% static 'frontend/aip-browser.js' %}"></script>
+{% endblock %}
+
+{% block topbar %}
+  <div id="connection-status" class="pull-right"></div>
+{% endblock %}
+
+{% block content %}
+
+  <div class="row">
+
+    <div class="col-md-offset-2 col-md-8">
+
+      <h2>{{ title }}</h2>
+
+      <ul class="breadcrumb">
+        {% trans "Ingest" as ingest_label %}
+        {% breadcrumb_url ingest_label 'ingest:ingest_index' %}
+        {% breadcrumb name %}
+      </ul>
+
+      <div id="aip-browser" data-directory="{{ directory|escapejs }}"></div>
+
+      <br clear="all" />
+
+    </div>
+
+  </div>
+
+{% endblock %}

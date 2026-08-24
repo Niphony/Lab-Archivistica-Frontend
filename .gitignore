@@ -25,3 +25,7 @@ pnpm-debug.log*
 
 #visual studio folder
 .vscode/
+
+# Datos de prueba de Archivematica (1.7GB), solo se conserva xml-validation
+Archivematica/archivematica/hack/submodules/archivematica-sampledata/*
+!Archivematica/archivematica/hack/submodules/archivematica-sampledata/xml-validation/

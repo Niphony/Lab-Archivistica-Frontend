@@ -1,0 +1,45 @@
+{
+  "locationDirectoryPicker": {
+    "ariaLabel": "Selector de directorio de ubicación",
+    "loadingDirectories": "Cargando...",
+    "loadFailed": "No se pudo cargar el directorio",
+    "retry": "Reintentar",
+    "select": "Seleccionar",
+    "spaceRoot": "Raíz del espacio"
+  },
+  "clipboardField": {
+    "copy": "Copiar",
+    "copied": "¡Copiado!",
+    "copyFailed": "No se pudo copiar. Copie el texto manualmente."
+  },
+  "packageActions": {
+    "pointerFile": "Archivo puntero",
+    "download": "Descargar",
+    "reingest": "Reingestar",
+    "updateStatus": "Actualizar estado",
+    "requestDeletion": "Solicitar eliminación"
+  },
+  "callbackHeaders": {
+    "delete": "Eliminar",
+    "addHeader": "Agregar encabezado"
+  },
+  "packageRequestDelete": {
+    "success": "Solicitud de eliminación de paquete enviada.",
+    "failure": "La solicitud de eliminación del paquete falló."
+  },
+  "tables": {
+    "search": "Buscar:",
+    "show": "Mostrar",
+    "entries": "entradas",
+    "showEntries": "Mostrar entradas:",
+    "previous": "Anterior",
+    "next": "Siguiente",
+    "pageIndicator": "Página {page} de {total}",
+    "loading": "Cargando...",
+    "loadFailed": "No se pudieron cargar los registros",
+    "noRecords": "No se encontraron registros coincidentes",
+    "info": "Mostrando del {start} al {end} de {total} registros",
+    "infoFiltered": "Mostrando del {start} al {end} de {filtered} registros (filtrados de un total de {total} registros)",
+    "infoEmpty": "Mostrando del 0 al 0 de 0 registros"
+  }
+}

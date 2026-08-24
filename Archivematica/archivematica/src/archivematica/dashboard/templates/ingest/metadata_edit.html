@@ -1,0 +1,53 @@
+{% extends "layout_fluid.html" %}
+{% load breadcrumb %}
+{% load i18n %}
+
+{% block content %}
+  <div class="row">
+    <div class="col-md-12">
+
+      <ul class="breadcrumb">
+        {% trans "Ingest" as ingest_label %}
+        {% trans "Metadata" as metadata_label %}
+        {% trans "Edit" as edit_label %}
+        {% trans "Add" as add_label %}
+        {% breadcrumb_url ingest_label 'ingest:ingest_index' %}
+        {% breadcrumb_url name 'unit:detail' 'ingest' uuid %}
+        {% breadcrumb_url metadata_label 'ingest:ingest_metadata_list' uuid %}
+        {% if id %}
+          {% breadcrumb edit_label %}
+        {% else %}
+          {% breadcrumb add_label %}
+        {% endif %}
+      </ul>
+
+      <h1>
+        {{ metadata_label }}<br />
+        <small>{{ name }}</small>
+      </h1>
+
+      {% if id %}
+        <form class="form-stacked" method="post" action="{% url 'ingest:ingest_metadata_edit' uuid id %}">
+      {% elif aic %}
+        <form class="form-stacked" method="post" action="{% url 'ingest:aic_metadata_add' uuid %}">
+      {% else %}
+        <form class="form-stacked" method="post" action="{% url 'ingest:ingest_metadata_add' uuid %}">
+      {% endif %}
+
+        {% csrf_token %}
+        {% include "_form.html" %}
+
+        <div class="actions">
+          {% if id %}
+            <input type="submit" class="btn btn-primary" value="{% trans 'Save' %}" />
+          {% else %}
+            <input type="submit" class="btn btn-primary" value="{% trans 'Create' %}" />
+          {% endif %}
+          <a href="{% url 'ingest:ingest_metadata_list' uuid %}" class="btn btn-default">{% trans "Cancel" %}</a>
+        </div>
+
+      </form>
+
+    </div>
+  </div>
+{% endblock %}

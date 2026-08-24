@@ -1,0 +1,42 @@
+{% extends "fpr/app_layout.html" %}
+{% load bootstrap_tags %}
+{% load i18n %}
+
+{% block title %}{{ block.super }} - {{ title }}{% endblock title %}
+{% block page_title %}{{ title }}{% endblock page_title %}
+
+{% block breadcrumbs %}
+{{ block.super }}
+<li><a href="{% url 'fpr:format_list' %}">{% trans "Formats" %}</a></li>
+<li><a href="{% url 'fpr:formatgroup_list' %}">{% trans "Groups" %}</a></li>
+<li>{{ title }}</li>
+{% endblock breadcrumbs %}
+
+{% block app_content %}
+
+
+    <div class='format'>
+
+      {% if group %}
+      <form action="{% url 'fpr:formatgroup_edit' group.slug %}" method="post" id='format_group_form'>
+      {% else %}
+      <form action="{% url 'fpr:formatgroup_create' %}" method="post" id='format_group_form'>
+      {% endif %}
+        {% csrf_token %}
+        {{ form|as_bootstrap }}
+        <input type="submit" value="{% trans 'Save' %}" class="btn btn-primary" />
+      </form>
+    </div>
+
+    {% if group %}
+    <h3>{% trans "Formats" %}</h3>
+
+      <div
+        class="fpr-vue-table"
+        data-fpr-table-root
+        data-fpr-table-script-id="fpr-formatgroup-form-formats-payload"></div>
+      {{ fpr_table_payload|json_script:"fpr-formatgroup-form-formats-payload" }}
+    {% endif %}
+
+
+{% endblock app_content %}
